@@ -32,15 +32,23 @@ class VercelPathFix:
         self.app = app
 
     def __call__(self, environ, start_response):
-        # Vercel's new behavior overwrites PATH_INFO to the destination of the rewrite (e.g., /api/index).
-        # We must restore the original path so Flask routes correctly.
-        # Vercel provides the original URI in REQUEST_URI or RAW_URI.
-        original_uri = environ.get('REQUEST_URI', environ.get('RAW_URI'))
-        if original_uri:
-            # The URI includes query strings, e.g., /login?user=1. Extract just the path.
-            path = original_uri.split('?')[0]
+        from urllib.parse import parse_qs
+        
+        # Check if we explicitly passed the path via query string in vercel.json rewrites
+        qs = environ.get('QUERY_STRING', '')
+        params = parse_qs(qs)
+        
+        if '__vercel_path' in params:
+            # We explicitly mapped the path, e.g. /api/index?__vercel_path=login
+            path = '/' + params['__vercel_path'][0]
             environ['PATH_INFO'] = path
-            
+        else:
+            # Fallback to standard HTTP headers if available
+            original_uri = environ.get('REQUEST_URI', environ.get('RAW_URI'))
+            if original_uri:
+                path = original_uri.split('?')[0]
+                environ['PATH_INFO'] = path
+                
         return self.app(environ, start_response)
 
 app.wsgi_app = VercelPathFix(app.wsgi_app)
