@@ -1,5 +1,6 @@
 import os
 import shutil
+import tempfile
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,25 +15,29 @@ class Config:
     DB_PASSWORD = os.environ.get('DB_PASSWORD', '')
     DB_NAME = os.environ.get('DB_NAME', 'hostel_management')
     
-    # Check if running in Vercel / Serverless cloud environment
-    IS_VERCEL = os.environ.get('VERCEL') == '1' or os.environ.get('VERCEL_ENV') is not None
+    # Base directory & Vercel detection
     BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+    IS_VERCEL = os.environ.get('VERCEL') == '1' or os.environ.get('VERCEL_ENV') is not None
     
+    # SQLite Database File: Writable directory on serverless
     if IS_VERCEL:
-        SQLITE_DB_PATH = '/tmp/hostel_management.db'
-        # Copy initial database to writable /tmp on serverless cold start
-        src_candidates = [
-            os.path.join(BASE_DIR, 'hostel_management.db'),
-            os.path.join(os.path.dirname(BASE_DIR), 'hostel_management.db'),
-            os.path.join(BASE_DIR, 'backend', 'hostel_management.db')
-        ]
-        for src in src_candidates:
-            if os.path.exists(src) and not os.path.exists(SQLITE_DB_PATH):
-                try:
-                    shutil.copy2(src, SQLITE_DB_PATH)
-                    break
-                except Exception:
-                    pass
+        temp_dir = tempfile.gettempdir()
+        SQLITE_DB_PATH = os.path.join(temp_dir, 'hostel_management.db')
+        
+        # Copy seeded database to temp_dir if not present
+        if not os.path.exists(SQLITE_DB_PATH):
+            src_candidates = [
+                os.path.join(BASE_DIR, 'hostel_management.db'),
+                os.path.join(BASE_DIR, 'backend', 'hostel_management.db'),
+                os.path.join(os.path.dirname(BASE_DIR), 'hostel_management.db')
+            ]
+            for src in src_candidates:
+                if os.path.exists(src):
+                    try:
+                        shutil.copy2(src, SQLITE_DB_PATH)
+                        break
+                    except Exception:
+                        pass
     else:
         SQLITE_DB_PATH = os.path.join(BASE_DIR, 'hostel_management.db')
     
