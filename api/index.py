@@ -26,6 +26,24 @@ app.static_folder = stc_path
 
 # Export WSGI app handlers for Vercel
 app.debug = False
+
+class VercelPathFix:
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        # Vercel's new behavior overwrites PATH_INFO to the destination of the rewrite (e.g., /api/index).
+        # We must restore the original path so Flask routes correctly.
+        # Vercel provides the original URI in REQUEST_URI or RAW_URI.
+        original_uri = environ.get('REQUEST_URI', environ.get('RAW_URI'))
+        if original_uri:
+            # The URI includes query strings, e.g., /login?user=1. Extract just the path.
+            path = original_uri.split('?')[0]
+            environ['PATH_INFO'] = path
+            
+        return self.app(environ, start_response)
+
+app.wsgi_app = VercelPathFix(app.wsgi_app)
 handler = app
 application = app
 
