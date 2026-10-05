@@ -1,5 +1,7 @@
 # Hostel Accommodation and Student Services Management System (DBMS)
 
+![Hostel Management System Preview](preview.jpg)
+
 A complete, production-ready, database-driven **Hostel Accommodation and Student Services Management System** built with **Python Flask**, **MySQL**, and modern **HTML/CSS/JavaScript**.
 
 ---
