@@ -1,13 +1,19 @@
 import os
+import sys
 from datetime import datetime, date
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
+
+# Ensure backend directory is in python search path
+CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
+if CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
+
 from config import Config
 from db import db
 
 # Locate frontend folder
-CURRENT_DIR = os.path.abspath(os.path.dirname(__file__))
 ROOT_DIR = os.path.dirname(CURRENT_DIR) if os.path.basename(CURRENT_DIR) == 'backend' else CURRENT_DIR
 
 template_dir = os.path.join(ROOT_DIR, 'frontend', 'templates')
@@ -163,13 +169,12 @@ def register():
         phone = request.form.get('phone', '').strip()
         course = request.form.get('course', '').strip()
         year = request.form.get('year', '').strip()
-        gender = request.form.get('gender', '').strip()
+        gender = request.form.get('gender', 'Female').strip()
         password = request.form.get('password', '').strip()
         emergency_contact = request.form.get('emergency_contact', '').strip()
         guardian_name = request.form.get('guardian_name', '').strip()
         address = request.form.get('address', '').strip()
         
-        # Validation
         if not (roll_number and name and email and phone and password):
             flash('Please fill out all required fields.', 'danger')
             return render_template('register.html', hostels=hostels)
@@ -208,7 +213,6 @@ def student_dashboard():
     student_id = session.get('student_id')
     student = db.fetch_one("SELECT * FROM Student WHERE student_id = %s", (student_id,))
     
-    # Room Allocation Information
     allocation = db.fetch_one("""
         SELECT ra.*, r.room_number, r.room_type, r.fee_per_semester, h.hostel_name, h.hostel_type, h.warden_name, h.contact_phone
         FROM Room_Allocation ra
@@ -217,7 +221,6 @@ def student_dashboard():
         WHERE ra.student_id = %s AND ra.status = 'Active'
     """, (student_id,))
     
-    # Roommates if allocated
     roommates = []
     if allocation:
         roommates = db.fetch_all("""
@@ -227,19 +230,13 @@ def student_dashboard():
             WHERE ra.room_id = %s AND ra.status = 'Active' AND s.student_id != %s
         """, (allocation['room_id'], student_id))
     
-    # Fee Summary
     fees = db.fetch_all("SELECT * FROM Fee WHERE student_id = %s ORDER BY created_at DESC", (student_id,))
     total_fee = sum(f['amount'] for f in fees) if fees else 0
     total_paid = sum(f['amount_paid'] for f in fees) if fees else 0
     total_due = sum(f['due_amount'] for f in fees) if fees else 0
     
-    # Recent Complaints
     complaints = db.fetch_all("SELECT * FROM Complaint WHERE student_id = %s ORDER BY complaint_date DESC LIMIT 5", (student_id,))
-    
-    # Recent Leave Requests
     leaves = db.fetch_all("SELECT * FROM Leave_Request WHERE student_id = %s ORDER BY applied_at DESC LIMIT 5", (student_id,))
-    
-    # Notices
     notices = db.fetch_all("SELECT * FROM Notice ORDER BY is_pinned DESC, date_posted DESC LIMIT 4")
     
     return render_template('student_dashboard.html',
@@ -312,7 +309,6 @@ def student_room():
 def student_fees():
     student_id = session.get('student_id')
     
-    # Pay fee action
     if request.method == 'POST':
         fee_id = request.form.get('fee_id')
         pay_amount = float(request.form.get('amount', 0))
@@ -413,7 +409,6 @@ def student_notices():
 @app.route('/admin/dashboard')
 @admin_required
 def admin_dashboard():
-    # KPI Metrics
     total_students = db.fetch_one("SELECT COUNT(*) AS count FROM Student")['count']
     total_rooms = db.fetch_one("SELECT COUNT(*) AS count FROM Room")['count']
     
@@ -430,7 +425,6 @@ def admin_dashboard():
     total_collected = fee_data['total_collected'] or 0
     total_due = fee_data['total_due'] or 0
     
-    # Recent Complaints
     recent_complaints = db.fetch_all("""
         SELECT c.*, s.name AS student_name, s.roll_number, r.room_number
         FROM Complaint c
@@ -440,7 +434,6 @@ def admin_dashboard():
         ORDER BY c.complaint_date DESC LIMIT 5
     """)
     
-    # Recent Leaves
     recent_leaves = db.fetch_all("""
         SELECT lr.*, s.name AS student_name, s.roll_number, s.phone
         FROM Leave_Request lr
@@ -449,7 +442,6 @@ def admin_dashboard():
         ORDER BY lr.applied_at DESC LIMIT 5
     """)
     
-    # Hostel Summary
     hostels_summary = db.fetch_all("""
         SELECT h.hostel_id, h.hostel_name, h.hostel_type,
                COUNT(r.room_id) AS room_count,
@@ -460,7 +452,6 @@ def admin_dashboard():
         GROUP BY h.hostel_id
     """)
     
-    # Urgent Notices
     notices = db.fetch_all("SELECT * FROM Notice ORDER BY is_pinned DESC, date_posted DESC LIMIT 4")
     
     return render_template('admin_dashboard.html',
@@ -493,14 +484,13 @@ def admin_students():
             phone = request.form.get('phone', '').strip()
             course = request.form.get('course', '').strip()
             year = request.form.get('year', '').strip()
-            gender = request.form.get('gender', '').strip()
+            gender = request.form.get('gender', 'Female').strip()
             password = request.form.get('password', 'student123').strip()
             emergency_contact = request.form.get('emergency_contact', '').strip()
             guardian_name = request.form.get('guardian_name', '').strip()
             address = request.form.get('address', '').strip()
             allocate_room_id = request.form.get('room_id')
             
-            # Check duplicate
             if db.fetch_one("SELECT * FROM Student WHERE roll_number = %s OR email = %s", (roll_number, email)):
                 flash('Student with this Roll Number or Email already exists.', 'danger')
                 return redirect(url_for('admin_students'))
@@ -512,8 +502,7 @@ def admin_students():
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (user_id, roll_number, name, email, phone, course, year, gender, emergency_contact, guardian_name, address))
             
-            # Create standard semester fee entry
-            fee_amount = 25000.00
+            fee_amount = 35000.00
             if allocate_room_id:
                 room = db.fetch_one("SELECT * FROM Room WHERE room_id = %s", (allocate_room_id,))
                 if room and room['occupied'] < room['capacity']:
@@ -557,7 +546,6 @@ def admin_students():
             student_id = request.form.get('student_id')
             student = db.fetch_one("SELECT * FROM Student WHERE student_id = %s", (student_id,))
             if student:
-                # Find active allocation to update room count
                 alloc = db.fetch_one("SELECT room_id FROM Room_Allocation WHERE student_id = %s AND status = 'Active'", (student_id,))
                 if alloc:
                     room_id = alloc['room_id']
@@ -570,7 +558,6 @@ def admin_students():
                 flash(f"Student record for '{student['name']}' removed.", 'info')
             return redirect(url_for('admin_students'))
             
-    # Search and Filter
     search = request.args.get('q', '').strip()
     gender_filter = request.args.get('gender', '')
     course_filter = request.args.get('course', '')
@@ -599,7 +586,6 @@ def admin_students():
     query += " ORDER BY s.student_id DESC"
     students = db.fetch_all(query, tuple(params))
     
-    # Available rooms for quick allocation modal
     available_rooms = db.fetch_all("""
         SELECT r.*, h.hostel_name 
         FROM Room r 
@@ -629,7 +615,7 @@ def admin_rooms():
             room_number = request.form.get('room_number', '').strip().upper()
             room_type = request.form.get('room_type')
             capacity = int(request.form.get('capacity', 2))
-            fee_per_semester = float(request.form.get('fee_per_semester', 25000.0))
+            fee_per_semester = float(request.form.get('fee_per_semester', 35000.0))
             
             existing = db.fetch_one("SELECT * FROM Room WHERE hostel_id = %s AND room_number = %s", (hostel_id, room_number))
             if existing:
@@ -646,7 +632,7 @@ def admin_rooms():
             room_id = request.form.get('room_id')
             room_type = request.form.get('room_type')
             capacity = int(request.form.get('capacity', 2))
-            fee_per_semester = float(request.form.get('fee_per_semester', 25000.0))
+            fee_per_semester = float(request.form.get('fee_per_semester', 35000.0))
             status = request.form.get('status', 'Available')
             
             db.execute_query("""
@@ -660,8 +646,8 @@ def admin_rooms():
             
         elif action == 'add_hostel':
             hostel_name = request.form.get('hostel_name', '').strip()
-            hostel_type = request.form.get('hostel_type', 'Boys')
-            location = request.form.get('location', 'Main Campus')
+            hostel_type = request.form.get('hostel_type', 'Girls')
+            location = request.form.get('location', 'Woxsen Campus, Hyderabad')
             warden_name = request.form.get('warden_name', 'Hostel Warden')
             contact_phone = request.form.get('contact_phone', '')
             
@@ -693,7 +679,6 @@ def admin_rooms():
     query += " ORDER BY h.hostel_name, r.room_number"
     rooms = db.fetch_all(query, tuple(params))
     
-    # Attach occupants to each room for easy viewing
     for room in rooms:
         room['occupants'] = db.fetch_all("""
             SELECT s.name, s.roll_number, s.course, s.phone 
@@ -715,15 +700,13 @@ def admin_allocations():
         if action == 'allocate':
             student_id = request.form.get('student_id')
             room_id = request.form.get('room_id')
-            remarks = request.form.get('remarks', 'Allocated by Warden')
+            remarks = request.form.get('remarks', 'Allocated by Woxsen Warden')
             
-            # Check if student already has active allocation
             existing = db.fetch_one("SELECT * FROM Room_Allocation WHERE student_id = %s AND status = 'Active'", (student_id,))
             if existing:
                 flash('This student already has an active room allocation. Please vacate or transfer first.', 'warning')
                 return redirect(url_for('admin_allocations'))
                 
-            # Check room capacity
             room = db.fetch_one("SELECT * FROM Room WHERE room_id = %s", (room_id,))
             if not room or room['occupied'] >= room['capacity']:
                 flash('Selected room is full or unavailable.', 'danger')
@@ -759,10 +742,8 @@ def admin_allocations():
                     return redirect(url_for('admin_allocations'))
                     
                 old_room_id = alloc['room_id']
-                # Vacate old
                 db.execute_query("UPDATE Room_Allocation SET status = 'Transferred' WHERE allocation_id = %s", (allocation_id,))
                 db.update_room_occupancy(old_room_id)
-                # Create new
                 db.execute_query("""
                     INSERT INTO Room_Allocation (student_id, room_id, allocation_date, status, remarks)
                     VALUES (%s, %s, %s, 'Active', 'Transferred by Warden')
@@ -833,7 +814,7 @@ def admin_fees():
         elif action == 'create_fee':
             student_id = request.form.get('student_id')
             academic_term = request.form.get('academic_term', 'Fall Semester 2026')
-            amount = float(request.form.get('amount', 25000.0))
+            amount = float(request.form.get('amount', 35000.0))
             remarks = request.form.get('remarks', 'Semester hostel fee invoice')
             
             db.execute_query("""
@@ -867,7 +848,6 @@ def admin_fees():
     query += " ORDER BY f.status ASC, f.created_at DESC"
     fees = db.fetch_all(query, tuple(params))
     
-    # Fee Metrics
     summary = db.fetch_one("SELECT SUM(amount) AS total, SUM(amount_paid) AS collected, SUM(due_amount) AS due FROM Fee")
     students = db.fetch_all("SELECT student_id, name, roll_number FROM Student ORDER BY name")
     
@@ -988,7 +968,7 @@ def admin_notices():
             title = request.form.get('title', '').strip()
             category = request.form.get('category', 'General')
             description = request.form.get('description', '').strip()
-            posted_by = request.form.get('posted_by', 'Hostel Warden')
+            posted_by = request.form.get('posted_by', 'Woxsen Hostel Administration')
             is_pinned = 1 if request.form.get('is_pinned') else 0
             
             db.execute_query("""
@@ -1020,7 +1000,6 @@ def admin_notices():
 @app.route('/admin/reports')
 @admin_required
 def admin_reports():
-    # 1. Occupancy by Hostel
     hostel_occupancy = db.fetch_all("""
         SELECT h.hostel_name, h.hostel_type,
                COUNT(r.room_id) AS total_rooms,
@@ -1032,14 +1011,12 @@ def admin_reports():
         GROUP BY h.hostel_id
     """)
     
-    # 2. Fee Collection Breakdown
     fee_breakdown = db.fetch_all("""
         SELECT status, COUNT(*) AS record_count, SUM(amount) AS total_billed, SUM(amount_paid) AS total_paid, SUM(due_amount) AS total_due
         FROM Fee
         GROUP BY status
     """)
     
-    # 3. Defaulter List
     defaulters = db.fetch_all("""
         SELECT s.name, s.roll_number, s.phone, s.email, f.amount, f.amount_paid, f.due_amount, f.academic_term
         FROM Fee f
@@ -1048,7 +1025,6 @@ def admin_reports():
         ORDER BY f.due_amount DESC
     """)
     
-    # 4. Complaints Breakdown by Type
     complaint_stats = db.fetch_all("""
         SELECT complaint_type, COUNT(*) AS count,
                SUM(CASE WHEN status = 'Resolved' THEN 1 ELSE 0 END) AS resolved_count,
@@ -1057,7 +1033,6 @@ def admin_reports():
         GROUP BY complaint_type
     """)
     
-    # 5. Course Distribution
     student_distribution = db.fetch_all("""
         SELECT course, year, COUNT(*) AS count
         FROM Student
@@ -1105,14 +1080,12 @@ def admin_db_settings():
                     'message': f"Successfully connected to MySQL server on {host}:{port} and verified database `{dbname}`!"
                 }
                 
-                # Update config in memory & save to .env
                 Config.DB_HOST = host
                 Config.DB_PORT = port
                 Config.DB_USER = user
                 Config.DB_PASSWORD = password
                 Config.DB_NAME = dbname
                 
-                # Re-initialize db engine
                 db._detect_and_init_engine()
                 flash('MySQL credentials verified and connected successfully!', 'success')
             except Exception as e:
@@ -1127,7 +1100,6 @@ def admin_db_settings():
             db._init_sqlite_schema()
             flash('Switched active database engine to SQLite (Built-in zero-setup storage).', 'info')
             
-    # Table counts
     table_counts = {
         'Users': db.fetch_one("SELECT COUNT(*) AS c FROM Users")['c'],
         'Hostel': db.fetch_one("SELECT COUNT(*) AS c FROM Hostel")['c'],
