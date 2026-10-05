@@ -13,7 +13,12 @@ class Database:
 
     def _detect_and_init_engine(self):
         """Attempts to connect to MySQL if configured, otherwise falls back to SQLite."""
-        if Config.DB_ENGINE in ['mysql', 'auto']:
+        # On Vercel, skip localhost MySQL to avoid cold-start timeout unless explicit host provided
+        should_try_mysql = Config.DB_ENGINE == 'mysql' or (
+            Config.DB_ENGINE == 'auto' and not (getattr(Config, 'IS_VERCEL', False) and Config.DB_HOST in ['localhost', '127.0.0.1'])
+        )
+        
+        if should_try_mysql:
             try:
                 conn = pymysql.connect(
                     host=Config.DB_HOST,
@@ -21,7 +26,7 @@ class Database:
                     user=Config.DB_USER,
                     password=Config.DB_PASSWORD,
                     cursorclass=pymysql.cursors.DictCursor,
-                    connect_timeout=3
+                    connect_timeout=2
                 )
                 with conn.cursor() as cursor:
                     cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{Config.DB_NAME}` CHARACTER SET utf8mb4;")

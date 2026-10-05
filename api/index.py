@@ -24,8 +24,10 @@ if not os.path.exists(stc_path):
     stc_path = os.path.join(BASE_DIR, 'frontend', 'static')
 app.static_folder = stc_path
 
-# Export WSGI app for Vercel
+# Export WSGI app handlers for Vercel
 app.debug = False
+handler = app
+application = app
 
 if __name__ == '__main__':
     app.run()
