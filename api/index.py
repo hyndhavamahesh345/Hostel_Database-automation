@@ -36,11 +36,16 @@ class VercelPathFix:
         
         # Check if we explicitly passed the path via query string in vercel.json rewrites
         qs = environ.get('QUERY_STRING', '')
-        params = parse_qs(qs)
+        params = parse_qs(qs, keep_blank_values=True)
         
         if '__vercel_path' in params:
             # We explicitly mapped the path, e.g. /api/index?__vercel_path=login
-            path = '/' + params['__vercel_path'][0]
+            # If the user visits the root '/', the parameter will be empty, which is correct!
+            path_val = params['__vercel_path'][0]
+            if not path_val.startswith('/'):
+                path = '/' + path_val
+            else:
+                path = path_val
             environ['PATH_INFO'] = path
         else:
             # Fallback to standard HTTP headers if available
