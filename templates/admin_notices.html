@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block title %}Notice Board Management - Hostel Management System{% endblock %}
+{% block page_title %}Hostel Notice Board Management{% endblock %}
+{% block page_subtitle %}Publish official announcements, maintenance schedules, and student circulars{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+    <!-- Publish Notice Form -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-bullhorn" style="color: var(--primary);"></i> Publish New Announcement</h3>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('admin_notices') }}" method="POST">
+                <input type="hidden" name="action" value="create">
+                
+                <div class="form-group">
+                    <label class="form-label">Notice Title / Subject *</label>
+                    <input type="text" name="title" class="form-control" placeholder="e.g. Hostel Wi-Fi Maintenance Window" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Category *</label>
+                        <select name="category" class="form-select" required>
+                            <option value="General">General Announcement</option>
+                            <option value="Maintenance">Maintenance & Facilities</option>
+                            <option value="Fee Deadline">Fee & Account Deadlines</option>
+                            <option value="Events">Hostel & Sports Events</option>
+                            <option value="Urgent">Urgent / Important Alert</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Publishing Authority</label>
+                        <input type="text" name="posted_by" value="Hostel Administration" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Detailed Content *</label>
+                    <textarea name="description" class="form-control" placeholder="Type announcement instructions here..." required style="min-height: 120px;"></textarea>
+                </div>
+
+                <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                    <input type="checkbox" id="is_pinned_chk" name="is_pinned" value="1" style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    <label for="is_pinned_chk" style="font-size: 14px; font-weight: 600; cursor: pointer;">
+                        Pin this announcement to top of Student Dashboard
+                    </label>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fa-solid fa-paper-plane"></i> Publish to Notice Board
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Active Notices List -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-list" style="color: var(--secondary);"></i> Active Published Notices</h3>
+                <span class="badge badge-secondary">{{ notices|length }} Notices</span>
+            </div>
+            <div class="card-body">
+                {% if notices %}
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    {% for n in notices %}
+                    <div class="notice-item {% if n.is_pinned %}pinned{% endif %} category-{{ n.category }}" style="margin-bottom: 0;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span class="badge {% if n.category == 'Urgent' %}badge-danger{% elif n.category == 'Maintenance' %}badge-warning{% elif n.category == 'Fee Deadline' %}badge-info{% elif n.category == 'Events' %}badge-secondary{% else %}badge-primary{% endif %}">
+                                    {{ n.category }}
+                                </span>
+                                {% if n.is_pinned %}
+                                <span style="font-size: 11px; color: #f59e0b; font-weight: 700;"><i class="fa-solid fa-thumbtack"></i> Pinned</span>
+                                {% endif %}
+                            </div>
+                            <div style="display: flex; gap: 6px;">
+                                <form action="{{ url_for('admin_notices') }}" method="POST" style="display: inline;">
+                                    <input type="hidden" name="action" value="toggle_pin">
+                                    <input type="hidden" name="notice_id" value="{{ n.notice_id }}">
+                                    <button type="submit" class="btn btn-outline btn-sm" title="Toggle Pin">
+                                        <i class="fa-solid fa-thumbtack"></i>
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('admin_notices') }}" method="POST" style="display: inline;" data-confirm="Are you sure you want to delete this notice?">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="notice_id" value="{{ n.notice_id }}">
+                                    <button type="submit" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger-border);" title="Delete Notice">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <h4 style="font-size: 15px; margin-bottom: 4px;">{{ n.title }}</h4>
+                        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">{{ n.description|truncate(120) }}</p>
+
+                        <div style="font-size: 11px; color: var(--text-light); margin-top: 8px;">
+                            Posted: {{ n.date_posted|datetime_format }} • By: {{ n.posted_by }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="text-align: center; color: var(--text-muted); padding: 30px;">No published notices.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

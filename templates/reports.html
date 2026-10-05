@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}DBMS Analytical Reports - Hostel Management System{% endblock %}
+{% block page_title %}DBMS Analytics & Operational Reports{% endblock %}
+{% block page_subtitle %}Comprehensive relational database analytics on occupancy, fee collections, and maintenance tickets{% endblock %}
+
+{% block content %}
+<!-- Top Print / Export Actions -->
+<div style="display: flex; justify-content: flex-end; margin-bottom: 20px;">
+    <button class="btn btn-primary" onclick="window.print()">
+        <i class="fa-solid fa-print"></i> Print / Save PDF Report
+    </button>
+</div>
+
+<!-- Section 1: Hostel Occupancy & Capacity Report -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-hotel" style="color: var(--primary);"></i> Hostel Capacity & Room Occupancy Report</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Hostel Block</th>
+                        <th>Type</th>
+                        <th>Total Rooms</th>
+                        <th>Total Capacity (Beds)</th>
+                        <th>Occupied Beds</th>
+                        <th>Vacant Beds</th>
+                        <th>Occupancy %</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in hostel_occupancy %}
+                    {% set cap = h.total_capacity or 0 %}
+                    {% set occ = h.total_occupied or 0 %}
+                    {% set pct = (occ / cap * 100)|round(1) if cap > 0 else 0 %}
+                    <tr>
+                        <td><strong>{{ h.hostel_name }}</strong></td>
+                        <td><span class="badge badge-secondary">{{ h.hostel_type }}</span></td>
+                        <td>{{ h.total_rooms }}</td>
+                        <td>{{ cap }}</td>
+                        <td><strong>{{ occ }}</strong></td>
+                        <td style="color: var(--success); font-weight: 700;">{{ h.vacant_beds }}</td>
+                        <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <div style="flex: 1; height: 6px; background: #e2e8f0; border-radius: 4px; overflow: hidden; width: 100px;">
+                                    <div style="width: {{ pct }}%; height: 100%; background: {% if pct > 80 %}var(--danger){% elif pct > 50 %}var(--warning){% else %}var(--success){% endif %};"></div>
+                                </div>
+                                <span style="font-size: 12px; font-weight: 700;">{{ pct }}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Section 2: Fee Collections & Defaulters -->
+<div class="grid-2">
+    <!-- Fee Summary by Status -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-chart-pie" style="color: var(--success);"></i> Fee Collection Status</h3>
+        </div>
+        <div class="card-body">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th>Invoices</th>
+                        <th>Total Billed</th>
+                        <th>Collected</th>
+                        <th>Dues</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for f in fee_breakdown %}
+                    <tr>
+                        <td>
+                            <span class="badge {% if f.status == 'Paid' %}badge-success{% elif f.status == 'Partial' %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ f.status }}
+                            </span>
+                        </td>
+                        <td>{{ f.record_count }}</td>
+                        <td>{{ f.total_billed|currency }}</td>
+                        <td style="color: var(--success); font-weight: 600;">{{ f.total_paid|currency }}</td>
+                        <td style="color: var(--danger); font-weight: 700;">{{ f.total_due|currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Maintenance Ticket Stats -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-screwdriver-wrench" style="color: var(--warning);"></i> Maintenance Tickets by Category</h3>
+        </div>
+        <div class="card-body">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>Total Logged</th>
+                        <th>Resolved</th>
+                        <th>Open / Pending</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in complaint_stats %}
+                    <tr>
+                        <td><strong>{{ c.complaint_type }}</strong></td>
+                        <td>{{ c.count }}</td>
+                        <td style="color: var(--success); font-weight: 600;">{{ c.resolved_count }}</td>
+                        <td style="color: var(--danger); font-weight: 700;">{{ c.open_count }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Section 3: Fee Defaulters List -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-triangle-exclamation" style="color: var(--danger);"></i> Outstanding Fee Defaulters</h3>
+        <span class="badge badge-danger">{{ defaulters|length }} Students with Dues</span>
+    </div>
+    <div class="card-body">
+        {% if defaulters %}
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Student Name</th>
+                        <th>Roll Number</th>
+                        <th>Contact Phone</th>
+                        <th>Email</th>
+                        <th>Term</th>
+                        <th>Total Fee</th>
+                        <th>Amount Paid</th>
+                        <th>Outstanding Due</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for d in defaulters %}
+                    <tr>
+                        <td><strong>{{ d.name }}</strong></td>
+                        <td>{{ d.roll_number }}</td>
+                        <td>{{ d.phone }}</td>
+                        <td>{{ d.email }}</td>
+                        <td>{{ d.academic_term }}</td>
+                        <td>{{ d.amount|currency }}</td>
+                        <td style="color: var(--success);">{{ d.amount_paid|currency }}</td>
+                        <td style="color: var(--danger); font-weight: 700; font-size: 15px;">{{ d.due_amount|currency }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align: center; color: var(--success); padding: 24px;"><i class="fa-solid fa-circle-check"></i> Great! All enrolled students have cleared their hostel dues.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Section 4: Student Demographics Distribution -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-graduation-cap" style="color: var(--primary);"></i> Student Resident Distribution by Course & Year</h3>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Program / Discipline</th>
+                        <th>Academic Year</th>
+                        <th>Total Enrolled Residents</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in student_distribution %}
+                    <tr>
+                        <td><strong>{{ s.course }}</strong></td>
+                        <td>{{ s.year }}</td>
+                        <td><span class="badge badge-primary">{{ s.count }} Students</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

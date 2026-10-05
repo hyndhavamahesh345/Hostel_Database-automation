@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+
+{% block title %}Student Records - Woxsen University{% endblock %}
+{% block page_title %}Student Resident Registry{% endblock %}
+{% block page_subtitle %}Woxsen University female student hostel records, enrollments, and profiles{% endblock %}
+
+{% block content %}
+<!-- Top Action Bar -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body" style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <!-- Filters -->
+        <form action="{{ url_for('admin_students') }}" method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+            <input type="text" name="q" value="{{ search or '' }}" placeholder="Search name, roll no, room..." class="form-control" style="width: 260px;">
+            <select name="gender" class="form-select" style="width: 140px;">
+                <option value="">All Genders</option>
+                <option value="Female" {% if gender_filter == 'Female' %}selected{% endif %}>Female</option>
+                <option value="Male" {% if gender_filter == 'Male' %}selected{% endif %}>Male</option>
+                <option value="Other" {% if gender_filter == 'Other' %}selected{% endif %}>Other</option>
+            </select>
+            <select name="course" class="form-select" style="width: 170px;">
+                <option value="">All Disciplines</option>
+                <option value="Computer Science" {% if 'Computer Science' in course_filter %}selected{% endif %}>B.Tech CS / AI</option>
+                <option value="Data Science" {% if 'Data Science' in course_filter %}selected{% endif %}>B.Tech Data Science</option>
+                <option value="BBA" {% if 'BBA' in course_filter %}selected{% endif %}>BBA Analytics</option>
+                <option value="Design" {% if 'Design' in course_filter %}selected{% endif %}>B.Des Design</option>
+                <option value="MBA" {% if 'MBA' in course_filter %}selected{% endif %}>MBA Management</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+            {% if search or gender_filter or course_filter %}
+            <a href="{{ url_for('admin_students') }}" class="btn btn-outline btn-sm">Reset</a>
+            {% endif %}
+        </form>
+
+        <!-- Add Button -->
+        <button class="btn btn-primary" data-open-modal="addStudentModal">
+            <i class="fa-solid fa-user-plus"></i> Add New Student
+        </button>
+    </div>
+</div>
+
+<!-- Student Records Table -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-users" style="color: var(--primary);"></i> Enrolled Students</h3>
+        <span class="badge badge-secondary">{{ students|length }} Students</span>
+    </div>
+    <div class="card-body">
+        {% if students %}
+        <div class="table-responsive">
+            <table class="custom-table" id="studentsTable">
+                <thead>
+                    <tr>
+                        <th>Roll Number</th>
+                        <th>Student Name</th>
+                        <th>Program & Year</th>
+                        <th>Gender</th>
+                        <th>Allocated Room</th>
+                        <th>Contact</th>
+                        <th>Fee Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in students %}
+                    <tr>
+                        <td><strong>{{ s.roll_number }}</strong></td>
+                        <td>
+                            <div style="font-weight: 700;">{{ s.name }}</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">{{ s.email }}</div>
+                        </td>
+                        <td>{{ s.course }} <span style="font-size: 12px; color: var(--text-muted);">({{ s.year }})</span></td>
+                        <td><span class="badge badge-secondary">{{ s.gender }}</span></td>
+                        <td>
+                            {% if s.room_number %}
+                            <strong>Room {{ s.room_number }}</strong>
+                            <div style="font-size: 11px; color: var(--text-muted);">{{ s.hostel_name }}</div>
+                            {% else %}
+                            <span class="badge badge-warning">Unallocated</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ s.phone }}</div>
+                            {% if s.emergency_contact %}<div style="font-size: 11px; color: var(--text-muted);">Em: {{ s.emergency_contact }}</div>{% endif %}
+                        </td>
+                        <td>
+                            <span class="badge {% if s.fee_status == 'Paid' %}badge-success{% elif s.fee_status == 'Partial' %}badge-warning{% elif s.fee_status == 'Pending' %}badge-danger{% else %}badge-secondary{% endif %}">
+                                {{ s.fee_status }}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" class="btn btn-outline btn-sm" title="Edit Student"
+                                    data-action="edit-student"
+                                    data-id="{{ s.student_id }}"
+                                    data-name="{{ s.name }}"
+                                    data-email="{{ s.email }}"
+                                    data-phone="{{ s.phone }}"
+                                    data-course="{{ s.course }}"
+                                    data-year="{{ s.year }}"
+                                    data-gender="{{ s.gender }}"
+                                    data-emergency="{{ s.emergency_contact or '' }}"
+                                    data-guardian="{{ s.guardian_name or '' }}"
+                                    data-address="{{ s.address or '' }}">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <form action="{{ url_for('admin_students') }}" method="POST" style="display: inline;" data-confirm="Are you sure you want to delete student '{{ s.name }}'? This will remove room allocation and records.">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="student_id" value="{{ s.student_id }}">
+                                    <button type="submit" class="btn btn-outline btn-sm" style="color: var(--danger); border-color: var(--danger-border);" title="Delete Student">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align: center; color: var(--text-muted); padding: 30px;">No student records found.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Add New Student -->
+<div class="modal-overlay" id="addStudentModal">
+    <div class="modal-dialog" style="max-width: 650px;">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-user-plus" style="color: var(--primary); margin-right: 8px;"></i> Add New Student</h3>
+            <button class="modal-close" data-close-modal>&times;</button>
+        </div>
+        <form action="{{ url_for('admin_students') }}" method="POST">
+            <input type="hidden" name="action" value="create">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="add_roll">Roll Number *</label>
+                        <input type="text" id="add_roll" name="roll_number" class="form-control" placeholder="e.g. WU202615" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="add_name">Full Name *</label>
+                        <input type="text" id="add_name" name="name" class="form-control" placeholder="e.g. Divya Nair" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="add_email">Woxsen Email Address *</label>
+                        <input type="email" id="add_email" name="email" class="form-control" placeholder="student.name@woxsen.edu.in" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="add_phone">Phone Number *</label>
+                        <input type="text" id="add_phone" name="phone" class="form-control" placeholder="+91 9876543210" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="add_course">Program / Discipline *</label>
+                        <select id="add_course" name="course" class="form-select" required>
+                            <option value="B.Tech Computer Science & AI">B.Tech Computer Science & AI</option>
+                            <option value="B.Tech Data Science">B.Tech Data Science</option>
+                            <option value="BBA Business Analytics">BBA Business Analytics</option>
+                            <option value="B.Des Fashion & Product Design">B.Des Fashion & Product Design</option>
+                            <option value="MBA General Management">MBA General Management</option>
+                            <option value="B.Arch Architecture">B.Arch Architecture</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="add_year">Year *</label>
+                        <select id="add_year" name="year" class="form-select" required>
+                            <option value="1st Year">1st Year</option>
+                            <option value="2nd Year">2nd Year</option>
+                            <option value="3rd Year">3rd Year</option>
+                            <option value="4th Year">4th Year</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="add_gender">Gender *</label>
+                        <select id="add_gender" name="gender" class="form-select" required>
+                            <option value="Female" selected>Female</option>
+                            <option value="Male">Male</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="add_room">Allocate Room Instantly (Optional)</label>
+                    <select id="add_room" name="room_id" class="form-select">
+                        <option value="">-- Do Not Allocate Room Yet --</option>
+                        {% for r in available_rooms %}
+                        <option value="{{ r.room_id }}">Room {{ r.room_number }} ({{ r.hostel_name }} - {{ r.room_type }}, Beds Available: {{ r.capacity - r.occupied }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="add_guardian">Guardian Name</label>
+                        <input type="text" id="add_guardian" name="guardian_name" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="add_emergency">Emergency Contact</label>
+                        <input type="text" id="add_emergency" name="emergency_contact" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="add_address">Permanent Address</label>
+                    <textarea id="add_address" name="address" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-close-modal>Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Student Record</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Student -->
+<div class="modal-overlay" id="editStudentModal">
+    <div class="modal-dialog" style="max-width: 650px;">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-user-pen" style="color: var(--primary); margin-right: 8px;"></i> Edit Student Profile</h3>
+            <button class="modal-close" data-close-modal>&times;</button>
+        </div>
+        <form action="{{ url_for('admin_students') }}" method="POST">
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" id="edit_student_id" name="student_id">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="edit_name">Full Name *</label>
+                        <input type="text" id="edit_name" name="name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit_email">Email Address *</label>
+                        <input type="email" id="edit_email" name="email" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="edit_phone">Phone Number *</label>
+                        <input type="text" id="edit_phone" name="phone" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit_gender">Gender *</label>
+                        <select id="edit_gender" name="gender" class="form-select" required>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="edit_course">Course *</label>
+                        <input type="text" id="edit_course" name="course" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit_year">Year *</label>
+                        <input type="text" id="edit_year" name="year" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="edit_guardian_name">Guardian Name</label>
+                        <input type="text" id="edit_guardian_name" name="guardian_name" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="edit_emergency_contact">Emergency Contact</label>
+                        <input type="text" id="edit_emergency_contact" name="emergency_contact" class="form-control">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="edit_address">Address</label>
+                    <textarea id="edit_address" name="address" class="form-control"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-close-modal>Cancel</button>
+                <button type="submit" class="btn btn-primary">Update Details</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,230 @@
+{% extends "base.html" %}
+
+{% block title %}Student Dashboard{% endblock %}
+{% block page_title %}Student Overview{% endblock %}
+{% block page_subtitle %}Welcome, {{ student.name }} ({{ student.roll_number }}){% endblock %}
+
+{% block content %}
+<!-- Quick Stats Row -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="fa-solid fa-bed"></i>
+        </div>
+        <div class="stat-details">
+            <span class="stat-title">Allocated Room</span>
+            <span class="stat-value">{% if allocation %}{{ allocation.room_number }}{% else %}Unallocated{% endif %}</span>
+            <span class="stat-subtext">{% if allocation %}{{ allocation.hostel_name }}{% else %}Contact Warden{% endif %}</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon {% if total_due > 0 %}danger{% else %}success{% endif %}">
+            <i class="fa-solid fa-wallet"></i>
+        </div>
+        <div class="stat-details">
+            <span class="stat-title">Fee Balance</span>
+            <span class="stat-value">{{ total_due|currency }}</span>
+            <span class="stat-subtext">{% if total_due > 0 %}Pending Payment{% else %}All Dues Cleared{% endif %}</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="fa-solid fa-circle-exclamation"></i>
+        </div>
+        <div class="stat-details">
+            <span class="stat-title">Active Complaints</span>
+            <span class="stat-value">{{ complaints|selectattr('status', 'ne', 'Resolved')|list|length }}</span>
+            <span class="stat-subtext">{{ complaints|length }} total filed</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon secondary">
+            <i class="fa-solid fa-plane-departure"></i>
+        </div>
+        <div class="stat-details">
+            <span class="stat-title">Leave Status</span>
+            <span class="stat-value">{% if leaves %}{{ leaves[0].status }}{% else %}None{% endif %}</span>
+            <span class="stat-subtext">Recent Application</span>
+        </div>
+    </div>
+</div>
+
+<!-- Two Column Main Section -->
+<div class="grid-2">
+    <!-- Left Column: Room & Allocation Details -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-house-chimney-user" style="color: var(--primary);"></i> My Room & Accommodation</h3>
+                {% if allocation %}
+                <span class="badge badge-success">Active Resident</span>
+                {% else %}
+                <span class="badge badge-warning">Awaiting Room</span>
+                {% endif %}
+            </div>
+            <div class="card-body">
+                {% if allocation %}
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+                    <div>
+                        <span style="font-size: 12px; color: var(--text-muted);">Hostel Block</span>
+                        <h4 style="font-size: 16px; margin-top: 2px;">{{ allocation.hostel_name }}</h4>
+                    </div>
+                    <div>
+                        <span style="font-size: 12px; color: var(--text-muted);">Room Type</span>
+                        <h4 style="font-size: 16px; margin-top: 2px;">{{ allocation.room_type }}</h4>
+                    </div>
+                    <div>
+                        <span style="font-size: 12px; color: var(--text-muted);">Allocation Date</span>
+                        <h4 style="font-size: 16px; margin-top: 2px;">{{ allocation.allocation_date|date_format }}</h4>
+                    </div>
+                    <div>
+                        <span style="font-size: 12px; color: var(--text-muted);">Warden In-Charge</span>
+                        <h4 style="font-size: 16px; margin-top: 2px;">{{ allocation.warden_name }}</h4>
+                        <span style="font-size: 12px; color: var(--primary);"><i class="fa-solid fa-phone"></i> {{ allocation.contact_phone }}</span>
+                    </div>
+                </div>
+
+                <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--text-muted); text-transform: uppercase;">Roommates</h4>
+                {% if roommates %}
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    {% for rm in roommates %}
+                    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg-main); border-radius: var(--radius-md);">
+                        <div>
+                            <strong>{{ rm.name }}</strong> ({{ rm.roll_number }})
+                            <div style="font-size: 12px; color: var(--text-muted);">{{ rm.course }} • {{ rm.year }}</div>
+                        </div>
+                        <span style="font-size: 13px; color: var(--text-muted);"><i class="fa-solid fa-phone"></i> {{ rm.phone }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p style="font-size: 13px; color: var(--text-muted);">No other roommates assigned to this room yet.</p>
+                {% endif %}
+
+                <div style="margin-top: 20px;">
+                    <a href="{{ url_for('student_room') }}" class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-circle-info"></i> Full Room Information
+                    </a>
+                </div>
+                {% else %}
+                <div style="text-align: center; padding: 30px 10px;">
+                    <i class="fa-solid fa-bed" style="font-size: 40px; color: #cbd5e1; margin-bottom: 14px;"></i>
+                    <h4>No Active Room Allocation</h4>
+                    <p style="font-size: 13px; color: var(--text-muted); max-width: 360px; margin: 6px auto 16px;">You have not been assigned a hostel room yet. Please contact the hostel warden or administration.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-bolt" style="color: #f59e0b;"></i> Quick Student Services</h3>
+            </div>
+            <div class="card-body" style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                <a href="{{ url_for('student_complaints') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 14px;">
+                    <i class="fa-solid fa-screwdriver-wrench" style="color: var(--warning);"></i>
+                    <div style="text-align: left;">
+                        <div>Report Issue</div>
+                        <small style="color: var(--text-muted); font-weight: 400;">Submit complaint</small>
+                    </div>
+                </a>
+                <a href="{{ url_for('student_leave') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 14px;">
+                    <i class="fa-solid fa-plane-departure" style="color: var(--secondary);"></i>
+                    <div style="text-align: left;">
+                        <div>Apply Leave</div>
+                        <small style="color: var(--text-muted); font-weight: 400;">Gate pass request</small>
+                    </div>
+                </a>
+                <a href="{{ url_for('student_fees') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 14px;">
+                    <i class="fa-solid fa-credit-card" style="color: var(--success);"></i>
+                    <div style="text-align: left;">
+                        <div>Pay Fees</div>
+                        <small style="color: var(--text-muted); font-weight: 400;">View invoices & pay</small>
+                    </div>
+                </a>
+                <a href="{{ url_for('student_notices') }}" class="btn btn-outline" style="justify-content: flex-start; padding: 14px;">
+                    <i class="fa-solid fa-bullhorn" style="color: var(--primary);"></i>
+                    <div style="text-align: left;">
+                        <div>Notices</div>
+                        <small style="color: var(--text-muted); font-weight: 400;">Latest circulars</small>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Column: Recent Complaints & Notices -->
+    <div>
+        <!-- Pinned / Latest Notices -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-bullhorn" style="color: var(--primary);"></i> Hostel Notices</h3>
+                <a href="{{ url_for('student_notices') }}" class="btn btn-outline btn-sm">View All</a>
+            </div>
+            <div class="card-body" style="padding-bottom: 8px;">
+                {% if notices %}
+                    {% for n in notices %}
+                    <div class="notice-item {% if n.is_pinned %}pinned{% endif %} category-{{ n.category }}">
+                        <div class="notice-meta">
+                            <span class="badge {% if n.category == 'Urgent' %}badge-danger{% elif n.category == 'Maintenance' %}badge-warning{% elif n.category == 'Fee Deadline' %}badge-info{% else %}badge-secondary{% endif %}">
+                                {{ n.category }}
+                            </span>
+                            <span><i class="fa-regular fa-clock"></i> {{ n.date_posted|date_format }}</span>
+                            {% if n.is_pinned %}<span style="color: #f59e0b; font-weight: 600;"><i class="fa-solid fa-thumbtack"></i> Pinned</span>{% endif %}
+                        </div>
+                        <div class="notice-title">{{ n.title }}</div>
+                        <p style="font-size: 13px; color: var(--text-muted); line-height: 1.4;">{{ n.description|truncate(120) }}</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p style="color: var(--text-muted); font-size: 14px;">No notices published right now.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Recent Complaints Status -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-circle-exclamation" style="color: var(--warning);"></i> My Recent Complaints</h3>
+                <a href="{{ url_for('student_complaints') }}" class="btn btn-outline btn-sm">New Complaint</a>
+            </div>
+            <div class="card-body">
+                {% if complaints %}
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in complaints %}
+                            <tr>
+                                <td><strong>{{ c.complaint_type }}</strong></td>
+                                <td>{{ c.title|truncate(30) }}</td>
+                                <td>
+                                    <span class="badge {% if c.status == 'Resolved' %}badge-success{% elif c.status == 'In Progress' %}badge-warning{% else %}badge-danger{% endif %}">
+                                        {{ c.status }}
+                                    </span>
+                                </td>
+                                <td style="font-size: 12px; color: var(--text-muted);">{{ c.complaint_date|date_format }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p style="color: var(--text-muted); font-size: 14px;">No complaints filed yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

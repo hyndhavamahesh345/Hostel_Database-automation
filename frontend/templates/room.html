@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}My Room - Hostel Management System{% endblock %}
+{% block page_title %}Room & Accommodation{% endblock %}
+{% block page_subtitle %}Your allocated room details, roommates, and amenities{% endblock %}
+
+{% block content %}
+{% if allocation %}
+<div class="grid-2">
+    <!-- Room Specifications -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-door-open" style="color: var(--primary);"></i> Room {{ allocation.room_number }}</h3>
+            <span class="badge badge-success">Allocated</span>
+        </div>
+        <div class="card-body">
+            <div style="background: var(--bg-main); padding: 20px; border-radius: var(--radius-md); margin-bottom: 24px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div>
+                        <span style="font-size: 12px; color: var(--text-muted); text-transform: uppercase;">Hostel Block</span>
+                        <h3 style="font-size: 20px; color: var(--primary);">{{ allocation.hostel_name }}</h3>
+                        <p style="font-size: 13px; color: var(--text-muted);"><i class="fa-solid fa-location-dot"></i> {{ allocation.location }}</p>
+                    </div>
+                    <div style="text-align: right;">
+                        <span class="badge badge-primary" style="font-size: 13px;">{{ allocation.room_type }}</span>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--text-main); margin-top: 6px;">
+                            {{ allocation.fee_per_semester|currency }} <span style="font-size: 12px; font-weight: 400; color: var(--text-muted);">/ sem</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 16px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px;">
+                        <span>Room Capacity: {{ allocation.capacity }} Beds</span>
+                        <span>Occupied: {{ allocation.occupied }} / {{ allocation.capacity }}</span>
+                    </div>
+                    <div class="bed-slots">
+                        {% for i in range(allocation.capacity) %}
+                        <div class="bed-slot {% if i < allocation.occupied %}occupied{% else %}available{% endif %}" title="{% if i < allocation.occupied %}Occupied{% else %}Available{% endif %}"></div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <h4 style="font-size: 15px; margin-bottom: 14px;">Included Room Amenities & Furnishing</h4>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 13px;">
+                <div style="display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-wifi" style="color: var(--primary);"></i> High-Speed Wi-Fi</div>
+                <div style="display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-plug" style="color: var(--secondary);"></i> Dedicated Power Point</div>
+                <div style="display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-bath" style="color: var(--info);"></i> Attached / Wing Bathroom</div>
+                <div style="display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-couch" style="color: var(--success);"></i> Study Desk & Chair</div>
+                <div style="display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-lock" style="color: var(--accent);"></i> Individual Steel Wardrobe</div>
+                <div style="display: flex; align-items: center; gap: 8px;"><i class="fa-solid fa-temperature-arrow-up" style="color: var(--warning);"></i> Solar Geyser Supply</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Roommates & Warden Info -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-users" style="color: var(--secondary);"></i> Roommates</h3>
+            </div>
+            <div class="card-body">
+                {% if roommates %}
+                    <div style="display: flex; flex-direction: column; gap: 14px;">
+                        {% for rm in roommates %}
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="user-avatar" style="width: 42px; height: 42px;">{{ rm.name[0] }}</div>
+                                <div>
+                                    <div style="font-weight: 700; font-size: 15px;">{{ rm.name }}</div>
+                                    <div style="font-size: 12px; color: var(--text-muted);">{{ rm.roll_number }} • {{ rm.course }} ({{ rm.year }})</div>
+                                </div>
+                            </div>
+                            <div style="text-align: right; font-size: 13px;">
+                                <div><a href="tel:{{ rm.phone }}" style="color: var(--primary);"><i class="fa-solid fa-phone"></i> {{ rm.phone }}</a></div>
+                                <div style="font-size: 12px; color: var(--text-muted);"><i class="fa-solid fa-envelope"></i> {{ rm.email }}</div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div style="text-align: center; padding: 24px; color: var(--text-muted);">
+                        <i class="fa-solid fa-user-clock" style="font-size: 32px; margin-bottom: 10px; color: #cbd5e1;"></i>
+                        <p>No other students currently allocated to this room.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Warden Contact -->
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-user-tie" style="color: var(--accent);"></i> Hostel Warden & Administration</h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="stat-icon primary">
+                        <i class="fa-solid fa-id-badge"></i>
+                    </div>
+                    <div>
+                        <h4 style="font-size: 16px;">{{ allocation.warden_name }}</h4>
+                        <p style="font-size: 13px; color: var(--text-muted);">Warden In-Charge, {{ allocation.hostel_name }}</p>
+                        <p style="font-size: 13px; color: var(--primary); margin-top: 4px;">
+                            <i class="fa-solid fa-phone"></i> <strong>{{ allocation.contact_phone }}</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="card" style="text-align: center; padding: 60px 20px;">
+    <i class="fa-solid fa-bed" style="font-size: 54px; color: #cbd5e1; margin-bottom: 16px;"></i>
+    <h2>No Room Allocated</h2>
+    <p style="color: var(--text-muted); max-width: 450px; margin: 8px auto 24px;">You are currently not allocated to any hostel block. Please visit the Warden's Office or contact administration.</p>
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}Student Registration - Woxsen University{% endblock %}
+
+{% block auth_content %}
+<div class="auth-page">
+    <div class="auth-container" style="max-width: 680px;">
+        <div class="auth-header">
+            <div class="auth-logo">
+                <i class="fa-solid fa-graduation-cap" style="color: #ffffff;"></i>
+            </div>
+            <h1>Woxsen University</h1>
+            <p>Female Student Hostel Accommodation Registration</p>
+        </div>
+
+        <form action="{{ url_for('register') }}" method="POST">
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="reg-roll">Roll Number *</label>
+                    <input type="text" id="reg-roll" name="roll_number" class="form-control" placeholder="e.g. WU202610" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reg-name">Full Name *</label>
+                    <input type="text" id="reg-name" name="name" class="form-control" placeholder="e.g. Divya Nair" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="reg-email">Woxsen Email Address *</label>
+                    <input type="email" id="reg-email" name="email" class="form-control" placeholder="student.name@woxsen.edu.in" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reg-phone">Phone Number *</label>
+                    <input type="text" id="reg-phone" name="phone" class="form-control" placeholder="+91 9876543210" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="reg-course">Degree / Discipline *</label>
+                    <select id="reg-course" name="course" class="form-select" required>
+                        <option value="B.Tech Computer Science & AI">B.Tech Computer Science & AI</option>
+                        <option value="B.Tech Data Science">B.Tech Data Science</option>
+                        <option value="BBA Business Analytics">BBA Business Analytics</option>
+                        <option value="B.Des Fashion & Product Design">B.Des Fashion & Product Design</option>
+                        <option value="MBA General Management">MBA General Management</option>
+                        <option value="B.Arch Architecture & Design">B.Arch Architecture & Design</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reg-year">Current Year *</label>
+                    <select id="reg-year" name="year" class="form-select" required>
+                        <option value="1st Year">1st Year</option>
+                        <option value="2nd Year">2nd Year</option>
+                        <option value="3rd Year">3rd Year</option>
+                        <option value="4th Year">4th Year</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reg-gender">Gender *</label>
+                    <select id="reg-gender" name="gender" class="form-select" required>
+                        <option value="Female" selected>Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" for="reg-guardian">Guardian / Parent Name</label>
+                    <input type="text" id="reg-guardian" name="guardian_name" class="form-control" placeholder="Mother / Father name">
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="reg-emergency">Emergency Contact Phone</label>
+                    <input type="text" id="reg-emergency" name="emergency_contact" class="form-control" placeholder="+91 9811122201">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="reg-address">Permanent Residential Address</label>
+                <textarea id="reg-address" name="address" class="form-control" placeholder="City, State, Pin code"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="reg-pass">Create Account Password *</label>
+                <input type="password" id="reg-pass" name="password" class="form-control" placeholder="Enter secure password" required>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 10px;">
+                <i class="fa-solid fa-check"></i> Register & Enroll in Woxsen Hostel
+            </button>
+        </form>
+
+        <div style="text-align: center; margin-top: 20px; font-size: 14px; color: var(--text-muted);">
+            Already registered? <a href="{{ url_for('login') }}" style="font-weight: 600;">Sign In here</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+
+{% block title %}Leave Application - Hostel Management System{% endblock %}
+{% block page_title %}Student Leave & Outpass{% endblock %}
+{% block page_subtitle %}Apply for hostel leave and view approval status from Warden{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+    <!-- Leave Request Form -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-plane-departure" style="color: var(--primary);"></i> Apply for Leave / Gatepass</h3>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('student_leave') }}" method="POST">
+                <div class="form-group">
+                    <label class="form-label" for="leave-type">Leave Category *</label>
+                    <select id="leave-type" name="leave_type" class="form-select" required>
+                        <option value="Weekend Home">Weekend Home Visit</option>
+                        <option value="Medical">Medical Checkup / Health Issue</option>
+                        <option value="Academic/Event">Academic Conference / Competition / Project</option>
+                        <option value="Emergency">Family Emergency</option>
+                        <option value="Other">Other Personal Reasons</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="leave-start">Leave Start Date *</label>
+                        <input type="date" id="leave-start" name="start_date" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="leave-end">Expected Return Date *</label>
+                        <input type="date" id="leave-end" name="end_date" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="leave-emergency">Emergency Contact Phone Number *</label>
+                    <input type="text" id="leave-emergency" name="emergency_contact" class="form-control" placeholder="Guardian / Parent mobile number" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="leave-reason">Reason for Leave *</label>
+                    <textarea id="leave-reason" name="reason" class="form-control" placeholder="Please state destination, purpose, and mode of travel..." required style="min-height: 100px;"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Leave Application
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Outpass Rules & Guidelines -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-clipboard-check" style="color: var(--secondary);"></i> Leave & Outpass Regulations</h3>
+            </div>
+            <div class="card-body">
+                <div style="font-size: 13px; color: var(--text-muted); display: flex; flex-direction: column; gap: 12px;">
+                    <div style="display: flex; gap: 10px;">
+                        <i class="fa-solid fa-bell" style="color: var(--primary); margin-top: 3px;"></i>
+                        <span>Apply at least <strong>24 hours in advance</strong> for planned weekend visits.</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <i class="fa-solid fa-phone" style="color: var(--success); margin-top: 3px;"></i>
+                        <span>Wardens may contact parents/guardians for verification before approving overnight leaves.</span>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <i class="fa-solid fa-id-card" style="color: var(--warning); margin-top: 3px;"></i>
+                        <span>Show approved digital outpass at security gate during departure and return sign-in.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Leave Request History Table -->
+<div class="card" style="margin-top: 24px;">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> Leave Application History</h3>
+    </div>
+    <div class="card-body">
+        {% if leaves %}
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Leave ID</th>
+                        <th>Type</th>
+                        <th>Duration</th>
+                        <th>Reason</th>
+                        <th>Emergency Phone</th>
+                        <th>Applied On</th>
+                        <th>Status</th>
+                        <th>Warden Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in leaves %}
+                    <tr>
+                        <td><strong>#LEV-{{ l.leave_id }}</strong></td>
+                        <td><span class="badge badge-secondary">{{ l.leave_type }}</span></td>
+                        <td>
+                            <strong>{{ l.start_date|date_format }}</strong> to <strong>{{ l.end_date|date_format }}</strong>
+                        </td>
+                        <td style="font-size: 13px; max-width: 250px;">{{ l.reason }}</td>
+                        <td>{{ l.emergency_contact or '—' }}</td>
+                        <td style="font-size: 12px; color: var(--text-muted);">{{ l.applied_at|date_format }}</td>
+                        <td>
+                            <span class="badge {% if l.status == 'Approved' %}badge-success{% elif l.status == 'Pending' %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ l.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if l.admin_remarks %}
+                            <div style="font-size: 12px; color: #475569; background: #f1f5f9; padding: 4px 8px; border-radius: var(--radius-sm);">
+                                {{ l.admin_remarks }}
+                            </div>
+                            {% else %}
+                            <span style="color: var(--text-light); font-size: 12px;">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align: center; color: var(--text-muted); padding: 30px;">No leave applications found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

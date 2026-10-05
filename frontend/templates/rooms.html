@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Rooms & Hostels - Hostel Management System{% endblock %}
+{% block page_title %}Hostels & Room Inventory{% endblock %}
+{% block page_subtitle %}Manage hostel blocks, room types, capacities, fees, and occupancy status{% endblock %}
+
+{% block content %}
+<!-- Control Bar -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body" style="padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+        <form action="{{ url_for('admin_rooms') }}" method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+            <select name="hostel_id" class="form-select" style="width: 220px;">
+                <option value="">All Hostel Blocks</option>
+                {% for h in hostels %}
+                <option value="{{ h.hostel_id }}" {% if selected_hostel|string == h.hostel_id|string %}selected{% endif %}>{{ h.hostel_name }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="status" class="form-select" style="width: 160px;">
+                <option value="">All Statuses</option>
+                <option value="Available" {% if selected_status == 'Available' %}selected{% endif %}>Available</option>
+                <option value="Full" {% if selected_status == 'Full' %}selected{% endif %}>Full (Occupied)</option>
+                <option value="Under Maintenance" {% if selected_status == 'Under Maintenance' %}selected{% endif %}>Under Maintenance</option>
+            </select>
+
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+            {% if selected_hostel or selected_status %}
+            <a href="{{ url_for('admin_rooms') }}" class="btn btn-outline btn-sm">Reset</a>
+            {% endif %}
+        </form>
+
+        <div style="display: flex; gap: 10px;">
+            <button class="btn btn-outline" data-open-modal="addHostelModal">
+                <i class="fa-solid fa-building"></i> Add Hostel Block
+            </button>
+            <button class="btn btn-primary" data-open-modal="addRoomModal">
+                <i class="fa-solid fa-plus"></i> Add New Room
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Rooms Visual Grid -->
+<div class="room-grid">
+    {% for r in rooms %}
+    <div class="room-card status-{{ r.status|replace(' ', '_') }}">
+        <div class="room-header">
+            <div>
+                <span class="room-num">Room {{ r.room_number }}</span>
+                <div class="room-hostel">{{ r.hostel_name }}</div>
+            </div>
+            <span class="badge {% if r.status == 'Available' %}badge-success{% elif r.status == 'Full' %}badge-danger{% else %}badge-warning{% endif %}">
+                {{ r.status }}
+            </span>
+        </div>
+
+        <div>
+            <span class="room-type-tag">{{ r.room_type }}</span>
+            <div style="font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 8px;">
+                {{ r.fee_per_semester|currency }} <span style="font-size: 11px; font-weight: 400; color: var(--text-muted);">/ semester</span>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 4px;">
+            <span>Occupancy</span>
+            <span><strong>{{ r.occupied }} / {{ r.capacity }}</strong> Beds</span>
+        </div>
+        <div class="bed-slots">
+            {% for i in range(r.capacity) %}
+            <div class="bed-slot {% if i < r.occupied %}occupied{% else %}available{% endif %}" title="{% if i < r.occupied %}Bed Occupied{% else %}Bed Available{% endif %}"></div>
+            {% endfor %}
+        </div>
+
+        <div class="occupants-list">
+            <strong>Occupants ({{ r.occupants|length }}):</strong>
+            {% if r.occupants %}
+                {% for o in r.occupants %}
+                <div style="margin-top: 4px;">• {{ o.name }} ({{ o.roll_number }})</div>
+                {% endfor %}
+            {% else %}
+                <div style="color: var(--text-light); font-style: italic; margin-top: 4px;">No active residents</div>
+            {% endif %}
+        </div>
+
+        <div style="margin-top: 14px; display: flex; justify-content: flex-end;">
+            <button type="button" class="btn btn-outline btn-sm"
+                data-action="edit-room"
+                data-id="{{ r.room_id }}"
+                data-type="{{ r.room_type }}"
+                data-capacity="{{ r.capacity }}"
+                data-fee="{{ r.fee_per_semester }}"
+                data-status="{{ r.status }}">
+                <i class="fa-solid fa-pen-to-square"></i> Edit Room
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Modal: Add Room -->
+<div class="modal-overlay" id="addRoomModal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-door-open" style="color: var(--primary); margin-right: 8px;"></i> Add New Hostel Room</h3>
+            <button class="modal-close" data-close-modal>&times;</button>
+        </div>
+        <form action="{{ url_for('admin_rooms') }}" method="POST">
+            <input type="hidden" name="action" value="add_room">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Hostel Block *</label>
+                    <select name="hostel_id" class="form-select" required>
+                        {% for h in hostels %}
+                        <option value="{{ h.hostel_id }}">{{ h.hostel_name }} ({{ h.hostel_type }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Room Number *</label>
+                        <input type="text" name="room_number" class="form-control" placeholder="e.g. A-105" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Room Type *</label>
+                        <select name="room_type" class="form-select" required>
+                            <option value="Single AC">Single AC</option>
+                            <option value="Single Non-AC">Single Non-AC</option>
+                            <option value="Double AC">Double AC</option>
+                            <option value="Double Non-AC" selected>Double Non-AC</option>
+                            <option value="Triple Non-AC">Triple Non-AC</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Bed Capacity *</label>
+                        <input type="number" name="capacity" min="1" max="6" value="2" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fee Per Semester (₹) *</label>
+                        <input type="number" step="100" name="fee_per_semester" value="25000" class="form-control" required>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-close-modal>Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Room</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Edit Room -->
+<div class="modal-overlay" id="editRoomModal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-pen-to-square" style="color: var(--primary); margin-right: 8px;"></i> Edit Room Configuration</h3>
+            <button class="modal-close" data-close-modal>&times;</button>
+        </div>
+        <form action="{{ url_for('admin_rooms') }}" method="POST">
+            <input type="hidden" name="action" value="edit_room">
+            <input type="hidden" id="edit_room_id" name="room_id">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Room Type *</label>
+                    <select id="edit_room_type" name="room_type" class="form-select" required>
+                        <option value="Single AC">Single AC</option>
+                        <option value="Single Non-AC">Single Non-AC</option>
+                        <option value="Double AC">Double AC</option>
+                        <option value="Double Non-AC">Double Non-AC</option>
+                        <option value="Triple Non-AC">Triple Non-AC</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Bed Capacity *</label>
+                        <input type="number" id="edit_capacity" name="capacity" min="1" max="6" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Fee Per Semester (₹) *</label>
+                        <input type="number" step="100" id="edit_fee_per_semester" name="fee_per_semester" class="form-control" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Status *</label>
+                    <select id="edit_status" name="status" class="form-select" required>
+                        <option value="Available">Available</option>
+                        <option value="Full">Full</option>
+                        <option value="Under Maintenance">Under Maintenance</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-close-modal>Cancel</button>
+                <button type="submit" class="btn btn-primary">Update Room</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Add Hostel Block -->
+<div class="modal-overlay" id="addHostelModal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-building" style="color: var(--secondary); margin-right: 8px;"></i> Add New Hostel Block</h3>
+            <button class="modal-close" data-close-modal>&times;</button>
+        </div>
+        <form action="{{ url_for('admin_rooms') }}" method="POST">
+            <input type="hidden" name="action" value="add_hostel">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Hostel Name *</label>
+                    <input type="text" name="hostel_name" class="form-control" placeholder="e.g. Woxsen Sapphire Girls Hostel (Block E)" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Hostel Type *</label>
+                        <select name="hostel_type" class="form-select" required>
+                            <option value="Girls" selected>Girls Hostel</option>
+                            <option value="Boys">Boys Hostel</option>
+                            <option value="Co-Ed">Co-Ed</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Location / Campus Zone</label>
+                        <input type="text" name="location" class="form-control" placeholder="e.g. Woxsen East Campus, Hyderabad">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Warden In-Charge</label>
+                        <input type="text" name="warden_name" class="form-control" placeholder="Dr. / Prof. Name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Warden Contact Phone</label>
+                        <input type="text" name="contact_phone" class="form-control" placeholder="+91 9845012345">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-close-modal>Cancel</button>
+                <button type="submit" class="btn btn-primary">Create Hostel Block</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

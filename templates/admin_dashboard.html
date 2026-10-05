@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}Executive Warden Dashboard - Woxsen University{% endblock %}
+{% block page_title %}Executive Warden Dashboard{% endblock %}
+{% block page_subtitle %}Woxsen University Hostel Accommodation & Student Services Management System{% endblock %}
+
+{% block content %}
+<!-- KPI Stats Row -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon primary">
+            <i class="fa-solid fa-users"></i>
+        </div>
+        <div class="stat-details">
+            <span class="stat-title">Total Residents</span>
+            <span class="stat-value">{{ total_students }}</span>
+            <span class="stat-subtext">Registered female students</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon secondary">
+            <i class="fa-solid fa-door-open"></i>
+        </div>
+        <div class="stat-details">
+            <span class="stat-title">Bed Occupancy</span>
+            <span class="stat-value">{{ occupied_beds }} / {{ total_beds }}</span>
+            <span class="stat-subtext">{{ available_beds }} vacant beds ({{ total_rooms }} rooms)</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon {% if pending_complaints > 0 %}danger{% else %}success{% endif %}">
+            <i class="fa-solid fa-screwdriver-wrench"></i>
+        </div>
+        <div class="stat-details">
+            <span class="stat-title">Open Complaints</span>
+            <span class="stat-value">{{ pending_complaints }}</span>
+            <span class="stat-subtext">Maintenance queue</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon warning">
+            <i class="fa-solid fa-calendar-check"></i>
+        </div>
+        <div class="stat-details">
+            <span class="stat-title">Pending Outpasses</span>
+            <span class="stat-value">{{ pending_leaves }}</span>
+            <span class="stat-subtext">Awaiting warden sign-off</span>
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-icon success">
+            <i class="fa-solid fa-sack-dollar"></i>
+        </div>
+        <div class="stat-details">
+            <span class="stat-title">Fee Collected</span>
+            <span class="stat-value">{{ total_collected|currency }}</span>
+            <span class="stat-subtext">Dues: {{ total_due|currency }}</span>
+        </div>
+    </div>
+</div>
+
+<!-- Middle Section: 2 Columns (Hostels Capacity & Leave Approvals) -->
+<div class="grid-2">
+    <!-- Hostel Blocks Occupancy Summary -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-building-columns" style="color: var(--primary);"></i> Woxsen Hostel Blocks</h3>
+            <a href="{{ url_for('admin_rooms') }}" class="btn btn-outline btn-sm">Manage Inventory</a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>Hostel Block</th>
+                            <th>Type</th>
+                            <th>Beds</th>
+                            <th>Occupancy</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in hostels_summary %}
+                        {% set cap = h.capacity or 0 %}
+                        {% set occ = h.occupied or 0 %}
+                        {% set pct = (occ / cap * 100)|round(1) if cap > 0 else 0 %}
+                        <tr>
+                            <td>
+                                <strong>{{ h.hostel_name }}</strong>
+                                <div style="font-size: 11px; color: var(--text-muted);">{{ h.room_count }} Rooms</div>
+                            </td>
+                            <td><span class="badge badge-secondary">{{ h.hostel_type }}</span></td>
+                            <td><strong>{{ occ }} / {{ cap }}</strong></td>
+                            <td>
+                                <div style="display: flex; align-items: center; gap: 6px;">
+                                    <div style="flex: 1; height: 6px; background: #e2e8f0; border-radius: 4px; overflow: hidden; min-width: 60px;">
+                                        <div style="width: {{ pct }}%; height: 100%; background: {% if pct > 80 %}var(--danger){% elif pct > 50 %}var(--warning){% else %}var(--success){% endif %};"></div>
+                                    </div>
+                                    <span style="font-size: 11px; font-weight: 700;">{{ pct }}%</span>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pending Leave Approvals -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-plane-departure" style="color: var(--secondary);"></i> Pending Outpass Applications</h3>
+            <a href="{{ url_for('admin_leave') }}" class="btn btn-outline btn-sm">View All</a>
+        </div>
+        <div class="card-body">
+            {% if recent_leaves %}
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                {% for l in recent_leaves %}
+                <div style="padding: 12px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+                        <div>
+                            <strong>{{ l.student_name }}</strong> ({{ l.roll_number }})
+                            <div style="font-size: 12px; color: var(--text-muted);">{{ l.leave_type }} • {{ l.start_date|date_format }} to {{ l.end_date|date_format }}</div>
+                        </div>
+                        <span class="badge badge-warning">Pending</span>
+                    </div>
+                    <p style="font-size: 13px; color: var(--text-main); margin-bottom: 8px;">{{ l.reason }}</p>
+                    <div style="display: flex; gap: 8px;">
+                        <form action="{{ url_for('admin_leave') }}" method="POST" style="display: inline;">
+                            <input type="hidden" name="action" value="approve">
+                            <input type="hidden" name="leave_id" value="{{ l.leave_id }}">
+                            <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i> Approve</button>
+                        </form>
+                        <form action="{{ url_for('admin_leave') }}" method="POST" style="display: inline;" data-confirm="Reject this leave application?">
+                            <input type="hidden" name="action" value="reject">
+                            <input type="hidden" name="leave_id" value="{{ l.leave_id }}">
+                            <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-xmark"></i> Reject</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p style="text-align: center; color: var(--text-muted); padding: 24px;">No pending leave applications.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Bottom Section: Maintenance Complaints Registry & Quick Actions -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-circle-exclamation" style="color: var(--danger);"></i> Recent Student Complaints & Grievances</h3>
+        <div style="display: flex; gap: 8px;">
+            <a href="{{ url_for('admin_notices') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-bullhorn"></i> Publish Notice</a>
+            <a href="{{ url_for('admin_reports') }}" class="btn btn-outline btn-sm"><i class="fa-solid fa-chart-column"></i> DBMS Reports</a>
+            <a href="{{ url_for('admin_complaints') }}" class="btn btn-primary btn-sm">All Complaints</a>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if recent_complaints %}
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Resident</th>
+                        <th>Category</th>
+                        <th>Issue Summary</th>
+                        <th>Filed On</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in recent_complaints %}
+                    <tr>
+                        <td>
+                            <strong>{{ c.student_name }}</strong>
+                            <div style="font-size: 11px; color: var(--text-muted);">{{ c.roll_number }} (Room {{ c.room_number or 'N/A' }})</div>
+                        </td>
+                        <td><span class="badge badge-secondary">{{ c.complaint_type }}</span></td>
+                        <td>
+                            <strong>{{ c.title }}</strong>
+                            <div style="font-size: 12px; color: var(--text-muted); max-width: 320px;">{{ c.description|truncate(70) }}</div>
+                        </td>
+                        <td style="font-size: 12px; color: var(--text-muted);">{{ c.complaint_date|datetime_format }}</td>
+                        <td>
+                            <span class="badge {% if c.status == 'Resolved' %}badge-success{% elif c.status == 'In Progress' %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ c.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-primary btn-sm"
+                                data-action="update-complaint"
+                                data-id="{{ c.complaint_id }}"
+                                data-title="{{ c.title }}"
+                                data-status="{{ c.status }}"
+                                data-notes="{{ c.resolution_notes or '' }}">
+                                <i class="fa-solid fa-pen-to-square"></i> Update
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align: center; color: var(--text-muted); padding: 20px;">No complaints recorded.</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Update Complaint Status -->
+<div class="modal-overlay" id="updateComplaintModal">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3>Update Maintenance Ticket</h3>
+            <button class="modal-close" data-close-modal>&times;</button>
+        </div>
+        <form action="{{ url_for('admin_complaints') }}" method="POST">
+            <input type="hidden" name="action" value="update_status">
+            <input type="hidden" id="complaint_id_input" name="complaint_id">
+            <div class="modal-body">
+                <div style="font-size: 14px; font-weight: 600; margin-bottom: 16px;" id="complaint_title_display"></div>
+                
+                <div class="form-group">
+                    <label class="form-label">Update Status *</label>
+                    <select id="complaint_status_select" name="status" class="form-select" required>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress (Assigned to Staff)</option>
+                        <option value="Resolved">Resolved (Maintenance Completed)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Resolution Remarks / Action Taken</label>
+                    <textarea id="complaint_notes_input" name="resolution_notes" class="form-control" placeholder="e.g. Woxsen campus facilities team completed inspection and verified resolution."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" data-close-modal>Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

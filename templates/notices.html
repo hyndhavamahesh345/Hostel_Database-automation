@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Notice Board - Hostel Management System{% endblock %}
+{% block page_title %}Hostel Notices & Announcements{% endblock %}
+{% block page_subtitle %}Important notices, maintenance schedules, deadlines, and hostel event updates{% endblock %}
+
+{% block content %}
+<!-- Filter & Search Bar -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body" style="padding: 16px 20px;">
+        <form action="{{ url_for('student_notices') }}" method="GET" style="display: flex; gap: 14px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <a href="{{ url_for('student_notices') }}" class="btn btn-sm {% if not selected_category %}btn-primary{% else %}btn-outline{% endif %}">
+                    All Categories
+                </a>
+                <a href="{{ url_for('student_notices', category='Urgent') }}" class="btn btn-sm {% if selected_category == 'Urgent' %}btn-danger{% else %}btn-outline{% endif %}">
+                    Urgent
+                </a>
+                <a href="{{ url_for('student_notices', category='Maintenance') }}" class="btn btn-sm {% if selected_category == 'Maintenance' %}btn-warning{% else %}btn-outline{% endif %}">
+                    Maintenance
+                </a>
+                <a href="{{ url_for('student_notices', category='Fee Deadline') }}" class="btn btn-sm {% if selected_category == 'Fee Deadline' %}btn-primary{% else %}btn-outline{% endif %}">
+                    Fee Deadlines
+                </a>
+                <a href="{{ url_for('student_notices', category='Events') }}" class="btn btn-sm {% if selected_category == 'Events' %}btn-secondary{% else %}btn-outline{% endif %}">
+                    Events
+                </a>
+            </div>
+
+            <div style="display: flex; gap: 8px;">
+                <input type="text" name="q" value="{{ search or '' }}" class="form-control" placeholder="Search notices..." style="width: 240px; padding: 6px 12px; font-size: 13px;">
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-magnifying-glass"></i> Search</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Notice Cards Grid -->
+<div style="display: flex; flex-direction: column; gap: 16px;">
+    {% if notices %}
+        {% for n in notices %}
+        <div class="card notice-item {% if n.is_pinned %}pinned{% endif %} category-{{ n.category }}" style="margin-bottom: 0;">
+            <div class="card-body">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span class="badge {% if n.category == 'Urgent' %}badge-danger{% elif n.category == 'Maintenance' %}badge-warning{% elif n.category == 'Fee Deadline' %}badge-info{% elif n.category == 'Events' %}badge-secondary{% else %}badge-primary{% endif %}">
+                            {{ n.category }}
+                        </span>
+                        {% if n.is_pinned %}
+                        <span style="font-size: 12px; color: #f59e0b; font-weight: 700;">
+                            <i class="fa-solid fa-thumbtack"></i> Pinned Announcement
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div style="font-size: 12px; color: var(--text-muted);">
+                        <i class="fa-regular fa-clock"></i> {{ n.date_posted|datetime_format }}
+                    </div>
+                </div>
+
+                <h3 style="font-size: 18px; margin-bottom: 8px; color: var(--text-main);">{{ n.title }}</h3>
+                <p style="font-size: 14px; color: var(--text-muted); line-height: 1.6; white-space: pre-line;">{{ n.description }}</p>
+
+                <div style="margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--border-light); font-size: 12px; color: var(--text-light); display: flex; align-items: center; gap: 6px;">
+                    <i class="fa-solid fa-user-check"></i> Published by: <strong>{{ n.posted_by }}</strong>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+    <div class="card" style="text-align: center; padding: 60px 20px;">
+        <i class="fa-solid fa-bullhorn" style="font-size: 48px; color: #cbd5e1; margin-bottom: 14px;"></i>
+        <h3>No Notices Found</h3>
+        <p style="color: var(--text-muted); font-size: 14px; margin-top: 4px;">No notices matching your filter criteria were found.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

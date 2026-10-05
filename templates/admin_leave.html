@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Leave Request Management - Hostel Management System{% endblock %}
+{% block page_title %}Leave & Outpass Approvals{% endblock %}
+{% block page_subtitle %}Review and approve student outpass applications and manage institutional records{% endblock %}
+
+{% block content %}
+<!-- Filters -->
+<div class="card" style="margin-bottom: 24px;">
+    <div class="card-body" style="padding: 16px 24px;">
+        <form action="{{ url_for('admin_leave') }}" method="GET" style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+            <select name="status" class="form-select" style="width: 180px;">
+                <option value="">All Applications</option>
+                <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending Review</option>
+                <option value="Approved" {% if status_filter == 'Approved' %}selected{% endif %}>Approved Leaves</option>
+                <option value="Rejected" {% if status_filter == 'Rejected' %}selected{% endif %}>Rejected Leaves</option>
+            </select>
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+            {% if status_filter %}
+            <a href="{{ url_for('admin_leave') }}" class="btn btn-outline btn-sm">Reset</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<!-- Leave Table -->
+<div class="card">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-plane-departure" style="color: var(--secondary);"></i> Student Outpass Registry</h3>
+        <span class="badge badge-secondary">{{ leaves|length }} Requests</span>
+    </div>
+    <div class="card-body">
+        {% if leaves %}
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Leave ID</th>
+                        <th>Student Name</th>
+                        <th>Roll No & Room</th>
+                        <th>Leave Type</th>
+                        <th>Duration</th>
+                        <th>Reason</th>
+                        <th>Emergency Contact</th>
+                        <th>Status</th>
+                        <th>Actions / Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in leaves %}
+                    <tr>
+                        <td><strong>#LEV-{{ l.leave_id }}</strong></td>
+                        <td>
+                            <strong>{{ l.student_name }}</strong>
+                            <div style="font-size: 11px; color: var(--text-muted);">{{ l.course }} ({{ l.year }})</div>
+                        </td>
+                        <td>
+                            <div>{{ l.roll_number }}</div>
+                            <div style="font-size: 11px; color: var(--text-muted);">Room {{ l.room_number or 'N/A' }}</div>
+                        </td>
+                        <td><span class="badge badge-secondary">{{ l.leave_type }}</span></td>
+                        <td>
+                            <strong>{{ l.start_date|date_format }}</strong> to<br>
+                            <strong>{{ l.end_date|date_format }}</strong>
+                        </td>
+                        <td style="font-size: 13px; max-width: 220px;">{{ l.reason }}</td>
+                        <td>
+                            <a href="tel:{{ l.emergency_contact }}" style="color: var(--primary); font-size: 13px;">
+                                <i class="fa-solid fa-phone"></i> {{ l.emergency_contact or 'N/A' }}
+                            </a>
+                        </td>
+                        <td>
+                            <span class="badge {% if l.status == 'Approved' %}badge-success{% elif l.status == 'Pending' %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ l.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if l.status == 'Pending' %}
+                            <div style="display: flex; gap: 6px;">
+                                <form action="{{ url_for('admin_leave') }}" method="POST" style="display: inline;">
+                                    <input type="hidden" name="action" value="approve">
+                                    <input type="hidden" name="leave_id" value="{{ l.leave_id }}">
+                                    <input type="hidden" name="admin_remarks" value="Approved by Hostel Warden. Return on time.">
+                                    <button type="submit" class="btn btn-success btn-sm"><i class="fa-solid fa-check"></i> Approve</button>
+                                </form>
+                                <form action="{{ url_for('admin_leave') }}" method="POST" style="display: inline;" data-confirm="Reject this leave application?">
+                                    <input type="hidden" name="action" value="reject">
+                                    <input type="hidden" name="leave_id" value="{{ l.leave_id }}">
+                                    <input type="hidden" name="admin_remarks" value="Rejected due to pending academic requirements / parent confirmation.">
+                                    <button type="submit" class="btn btn-danger btn-sm"><i class="fa-solid fa-xmark"></i> Reject</button>
+                                </form>
+                            </div>
+                            {% else %}
+                            <div style="font-size: 12px; color: var(--text-muted);">
+                                {{ l.admin_remarks or '—' }}
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align: center; color: var(--text-muted); padding: 30px;">No leave applications found.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

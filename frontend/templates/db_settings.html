@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}Database Configuration - Hostel Management System{% endblock %}
+{% block page_title %}DBMS Engine & Database Hub{% endblock %}
+{% block page_subtitle %}Manage database connections, verify MySQL server connectivity, and inspect relational tables{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+    <!-- Active Database Status & Switcher -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-server" style="color: var(--primary);"></i> Active DBMS Engine</h3>
+            <span class="badge {% if active_engine == 'mysql' %}badge-success{% else %}badge-info{% endif %}" style="font-size: 13px;">
+                {{ active_engine|upper }} Engine Active
+            </span>
+        </div>
+        <div class="card-body">
+            <div style="background: var(--bg-main); padding: 18px; border-radius: var(--radius-md); margin-bottom: 20px;">
+                <div style="font-size: 13px; color: var(--text-muted);">Current Active Connection:</div>
+                <h3 style="font-size: 18px; margin-top: 4px; color: var(--text-main);">
+                    {% if active_engine == 'mysql' %}
+                        <i class="fa-solid fa-database" style="color: #00758f;"></i> MySQL Server ({{ config.DB_HOST }}:{{ config.DB_PORT }}) - Database: <code>{{ config.DB_NAME }}</code>
+                    {% else %}
+                        <i class="fa-solid fa-file-shield" style="color: #003b57;"></i> SQLite Local Database (<code>hostel_management.db</code>)
+                    {% endif %}
+                </h3>
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: 8px; line-height: 1.5;">
+                    {% if active_engine == 'mysql' %}
+                        The system is actively executing all queries and transactions against your local MySQL Server.
+                    {% else %}
+                        The application is currently running with full relational data persistence via SQLite. You can connect to your local MySQL 8.0 server using the configuration form on the right.
+                    {% endif %}
+                </p>
+            </div>
+
+            <!-- Table Record Summary -->
+            <h4 style="font-size: 15px; margin-bottom: 12px;"><i class="fa-solid fa-table-cells"></i> Relational Database Tables Overview</h4>
+            <table class="custom-table" style="font-size: 13px;">
+                <thead>
+                    <tr>
+                        <th>Table Name</th>
+                        <th>DBMS Role</th>
+                        <th>Record Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Users</strong></td>
+                        <td>Role-based authentication & credentials</td>
+                        <td><span class="badge badge-secondary">{{ table_counts.Users }} rows</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Hostel</strong></td>
+                        <td>Hostel buildings & warden in-charges</td>
+                        <td><span class="badge badge-secondary">{{ table_counts.Hostel }} rows</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Room</strong></td>
+                        <td>Room numbers, types, capacity & fees</td>
+                        <td><span class="badge badge-secondary">{{ table_counts.Room }} rows</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Student</strong></td>
+                        <td>Student personal & academic profiles</td>
+                        <td><span class="badge badge-secondary">{{ table_counts.Student }} rows</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Room_Allocation</strong></td>
+                        <td>Active bed assignments & allocation log</td>
+                        <td><span class="badge badge-secondary">{{ table_counts.Room_Allocation }} rows</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Fee</strong></td>
+                        <td>Student invoices, payments & dues</td>
+                        <td><span class="badge badge-secondary">{{ table_counts.Fee }} rows</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Complaint</strong></td>
+                        <td>Maintenance grievances & resolution notes</td>
+                        <td><span class="badge badge-secondary">{{ table_counts.Complaint }} rows</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Leave_Request</strong></td>
+                        <td>Student leave outpass applications</td>
+                        <td><span class="badge badge-secondary">{{ table_counts.Leave_Request }} rows</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Notice</strong></td>
+                        <td>Hostel circulars & pinned announcements</td>
+                        <td><span class="badge badge-secondary">{{ table_counts.Notice }} rows</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MySQL Connection Form -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-plug" style="color: var(--secondary);"></i> Configure MySQL Server Connection</h3>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('admin_db_settings') }}" method="POST">
+                    <input type="hidden" name="action" value="test_mysql">
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="mysql-host">MySQL Host</label>
+                            <input type="text" id="mysql-host" name="db_host" value="{{ config.DB_HOST }}" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="mysql-port">Port</label>
+                            <input type="number" id="mysql-port" name="db_port" value="{{ config.DB_PORT }}" class="form-control" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label" for="mysql-user">Username</label>
+                            <input type="text" id="mysql-user" name="db_user" value="{{ config.DB_USER }}" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="mysql-password">Password</label>
+                            <input type="password" id="mysql-password" name="db_password" value="{{ config.DB_PASSWORD }}" class="form-control" placeholder="Enter root password">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="mysql-name">Database Name</label>
+                        <input type="text" id="mysql-name" name="db_name" value="{{ config.DB_NAME }}" class="form-control" required>
+                    </div>
+
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button type="submit" class="btn btn-primary" style="flex: 1;">
+                            <i class="fa-solid fa-satellite-dish"></i> Connect to MySQL
+                        </button>
+                    </div>
+                </form>
+
+                {% if test_result %}
+                <div style="margin-top: 18px;" class="alert {% if test_result.success %}alert-success{% else %}alert-danger{% endif %}">
+                    <span>{{ test_result.message }}</span>
+                </div>
+                {% endif %}
+
+                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 24px 0;">
+
+                <h4 style="font-size: 14px; margin-bottom: 10px; color: var(--text-main);"><i class="fa-solid fa-laptop-code"></i> MySQL Workbench Instructions</h4>
+                <ol style="font-size: 13px; color: var(--text-muted); padding-left: 20px; display: flex; flex-direction: column; gap: 8px;">
+                    <li>Open <strong>MySQL Workbench</strong> and connect to your local MySQL instance.</li>
+                    <li>Open the file <code>database.sql</code> located in the project root directory.</li>
+                    <li>Click the <strong>Execute (Lightning bolt ⚡)</strong> button to create the database <code>hostel_management</code> and initialize all tables.</li>
+                    <li>Enter your MySQL root password above and click <strong>Connect to MySQL</strong>.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

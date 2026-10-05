@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}Student Complaints & Grievances - Hostel Management System{% endblock %}
+{% block page_title %}Complaints & Maintenance{% endblock %}
+{% block page_subtitle %}Submit facility complaints and track live resolution status from hostel warden{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+    <!-- Complaint Submission Form -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-pen-to-square" style="color: var(--primary);"></i> Submit New Complaint</h3>
+        </div>
+        <div class="card-body">
+            <form action="{{ url_for('student_complaints') }}" method="POST">
+                <div class="form-group">
+                    <label class="form-label" for="complaint-type">Issue Category *</label>
+                    <select id="complaint-type" name="complaint_type" class="form-select" required>
+                        <option value="">Select Category</option>
+                        <option value="Water">Water (Supply / Heater / Leakage)</option>
+                        <option value="Electricity">Electricity (Lighting / Power Socket / MCB)</option>
+                        <option value="Fan/AC">Fan / AC / Ventilation</option>
+                        <option value="Wi-Fi">Wi-Fi & Internet Connectivity</option>
+                        <option value="Cleanliness">Cleanliness & Housekeeping</option>
+                        <option value="Maintenance">Carpentry / Furniture / Lock</option>
+                        <option value="Other">Other Grievance</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="complaint-title">Brief Subject *</label>
+                        <input type="text" id="complaint-title" name="title" class="form-control" placeholder="e.g. Wi-Fi router disconnection in corridor" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="complaint-priority">Urgency Priority</label>
+                        <select id="complaint-priority" name="priority" class="form-select">
+                            <option value="Low">Low</option>
+                            <option value="Medium" selected>Medium</option>
+                            <option value="High">High</option>
+                            <option value="Emergency">Emergency</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="complaint-desc">Detailed Description *</label>
+                    <textarea id="complaint-desc" name="description" class="form-control" placeholder="Provide details such as room number, floor, specific symptoms or time of occurrence..." required style="min-height: 120px;"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Grievance
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Help & Categories Info -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-circle-question" style="color: var(--secondary);"></i> Complaint Handling Guidelines</h3>
+            </div>
+            <div class="card-body">
+                <div style="display: flex; flex-direction: column; gap: 14px; font-size: 13px; color: var(--text-muted);">
+                    <div style="display: flex; gap: 12px;">
+                        <span class="badge badge-danger" style="height: fit-content;">Pending</span>
+                        <div>Complaint has been received and queued in the Warden maintenance dispatch queue.</div>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <span class="badge badge-warning" style="height: fit-content;">In Progress</span>
+                        <div>Technician / electrician / plumber assigned to inspect and perform maintenance.</div>
+                    </div>
+                    <div style="display: flex; gap: 12px;">
+                        <span class="badge badge-success" style="height: fit-content;">Resolved</span>
+                        <div>Issue resolved and closed with verification notes by the Warden.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-headset" style="color: var(--warning);"></i> Urgent Emergency Contacts</h3>
+            </div>
+            <div class="card-body" style="font-size: 13px;">
+                <p><strong>Hostel Control Desk:</strong> +91 9845012345 (24x7 Available)</p>
+                <p style="margin-top: 6px;"><strong>Campus Security & Medical Unit:</strong> +91 9845099999</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Complaint History Table -->
+<div class="card" style="margin-top: 24px;">
+    <div class="card-header">
+        <h3><i class="fa-solid fa-clock-rotate-left" style="color: var(--primary);"></i> My Complaint History</h3>
+        <span class="badge badge-secondary">{{ complaints|length }} Total</span>
+    </div>
+    <div class="card-body">
+        {% if complaints %}
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>Ticket ID</th>
+                        <th>Category</th>
+                        <th>Title & Description</th>
+                        <th>Priority</th>
+                        <th>Date Filed</th>
+                        <th>Status</th>
+                        <th>Warden Resolution Remarks</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in complaints %}
+                    <tr>
+                        <td><strong>#CMP-{{ c.complaint_id }}</strong></td>
+                        <td><span class="badge badge-secondary">{{ c.complaint_type }}</span></td>
+                        <td>
+                            <strong>{{ c.title }}</strong>
+                            <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px; max-width: 320px;">{{ c.description }}</div>
+                        </td>
+                        <td>
+                            <span class="badge {% if c.priority == 'Emergency' %}badge-danger{% elif c.priority == 'High' %}badge-warning{% else %}badge-info{% endif %}">
+                                {{ c.priority }}
+                            </span>
+                        </td>
+                        <td style="font-size: 12px;">{{ c.complaint_date|datetime_format }}</td>
+                        <td>
+                            <span class="badge {% if c.status == 'Resolved' %}badge-success{% elif c.status == 'In Progress' %}badge-warning{% else %}badge-danger{% endif %}">
+                                {{ c.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if c.resolution_notes %}
+                            <div style="font-size: 12px; color: #065f46; background: #ecfdf5; padding: 6px 10px; border-radius: var(--radius-sm);">
+                                <i class="fa-solid fa-check"></i> {{ c.resolution_notes }}
+                            </div>
+                            {% else %}
+                            <span style="color: var(--text-light); font-size: 12px;">Awaiting review</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p style="text-align: center; color: var(--text-muted); padding: 30px;">You haven't filed any complaints.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

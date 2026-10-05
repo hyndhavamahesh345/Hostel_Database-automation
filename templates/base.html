@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Woxsen University{% endblock %} - Hostel Accommodation & Student Services DBMS</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% if session.get('user_id') %}
+    <div class="app-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="app-sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-logo-icon">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                </div>
+                <div class="sidebar-brand">
+                    <h2>Woxsen</h2>
+                    <span>University Hostels</span>
+                </div>
+            </div>
+
+            <nav class="sidebar-nav">
+                {% if session.get('role') in ['admin', 'warden'] %}
+                <!-- Admin & Warden Menu -->
+                <div class="nav-category">Administration</div>
+                <a href="{{ url_for('admin_dashboard') }}" class="nav-link {% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-chart-pie"></i> Dashboard
+                </a>
+                <a href="{{ url_for('admin_students') }}" class="nav-link {% if request.endpoint == 'admin_students' %}active{% endif %}">
+                    <i class="fa-solid fa-user-graduate"></i> Student Records
+                </a>
+                <a href="{{ url_for('admin_rooms') }}" class="nav-link {% if request.endpoint == 'admin_rooms' %}active{% endif %}">
+                    <i class="fa-solid fa-door-open"></i> Rooms & Hostels
+                </a>
+                <a href="{{ url_for('admin_allocations') }}" class="nav-link {% if request.endpoint == 'admin_allocations' %}active{% endif %}">
+                    <i class="fa-solid fa-bed"></i> Room Allocations
+                </a>
+
+                <div class="nav-category">Operations</div>
+                <a href="{{ url_for('admin_complaints') }}" class="nav-link {% if request.endpoint == 'admin_complaints' %}active{% endif %}">
+                    <i class="fa-solid fa-screwdriver-wrench"></i> Complaints
+                </a>
+                <a href="{{ url_for('admin_leave') }}" class="nav-link {% if request.endpoint == 'admin_leave' %}active{% endif %}">
+                    <i class="fa-solid fa-calendar-check"></i> Leave Requests
+                </a>
+                <a href="{{ url_for('admin_fees') }}" class="nav-link {% if request.endpoint == 'admin_fees' %}active{% endif %}">
+                    <i class="fa-solid fa-receipt"></i> Fee Management
+                </a>
+                <a href="{{ url_for('admin_notices') }}" class="nav-link {% if request.endpoint == 'admin_notices' %}active{% endif %}">
+                    <i class="fa-solid fa-bullhorn"></i> Notice Board
+                </a>
+
+                <div class="nav-category">System & Analytics</div>
+                <a href="{{ url_for('admin_reports') }}" class="nav-link {% if request.endpoint == 'admin_reports' %}active{% endif %}">
+                    <i class="fa-solid fa-file-waveform"></i> DBMS Reports
+                </a>
+                <a href="{{ url_for('admin_db_settings') }}" class="nav-link {% if request.endpoint == 'admin_db_settings' %}active{% endif %}">
+                    <i class="fa-solid fa-database"></i> Database Hub
+                </a>
+
+                {% else %}
+                <!-- Student Menu -->
+                <div class="nav-category">Student Portal</div>
+                <a href="{{ url_for('student_dashboard') }}" class="nav-link {% if request.endpoint == 'student_dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-gauge-high"></i> My Dashboard
+                </a>
+                <a href="{{ url_for('student_room') }}" class="nav-link {% if request.endpoint == 'student_room' %}active{% endif %}">
+                    <i class="fa-solid fa-bed"></i> Room Details
+                </a>
+                <a href="{{ url_for('student_fees') }}" class="nav-link {% if request.endpoint == 'student_fees' %}active{% endif %}">
+                    <i class="fa-solid fa-credit-card"></i> Fees & Invoices
+                </a>
+                <a href="{{ url_for('student_complaints') }}" class="nav-link {% if request.endpoint == 'student_complaints' %}active{% endif %}">
+                    <i class="fa-solid fa-circle-exclamation"></i> Complaints
+                </a>
+                <a href="{{ url_for('student_leave') }}" class="nav-link {% if request.endpoint == 'student_leave' %}active{% endif %}">
+                    <i class="fa-solid fa-plane-departure"></i> Leave Outpass
+                </a>
+                <a href="{{ url_for('student_notices') }}" class="nav-link {% if request.endpoint == 'student_notices' %}active{% endif %}">
+                    <i class="fa-solid fa-bullhorn"></i> Notices
+                </a>
+                <a href="{{ url_for('student_profile') }}" class="nav-link {% if request.endpoint == 'student_profile' %}active{% endif %}">
+                    <i class="fa-solid fa-id-card"></i> My Profile
+                </a>
+                {% endif %}
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-snippet">
+                    <div class="user-avatar">
+                        {{ session.get('student_name', session.get('username', 'U'))[0]|upper }}
+                    </div>
+                    <div class="user-info">
+                        <div class="name">{{ session.get('student_name', session.get('username')) }}</div>
+                        <span class="role-badge">{{ session.get('role') }}</span>
+                    </div>
+                    <a href="{{ url_for('logout') }}" title="Logout" style="color: #94a3b8; font-size: 16px;">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                    </a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <div class="app-main">
+            <!-- Header -->
+            <header class="app-header">
+                <div class="header-left">
+                    <button class="mobile-toggle" aria-label="Toggle Sidebar">
+                        <i class="fa-solid fa-bars"></i>
+                    </button>
+                    <div class="header-title">
+                        <h1>{% block page_title %}Woxsen University{% endblock %}</h1>
+                        <p>{% block page_subtitle %}Hostel Accommodation & Student Services DBMS{% endblock %}</p>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="engine-indicator" title="Active DBMS Engine">
+                        <span class="engine-dot {% if db_engine == 'mysql' %}mysql{% else %}sqlite{% endif %}"></span>
+                        <span>DB: {{ db_engine|upper }}</span>
+                    </div>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </a>
+                </div>
+            </header>
+
+            <!-- Body Container -->
+            <main class="page-container">
+                <!-- Flash Alerts -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                    <div class="flash-container">
+                        {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <span><i class="fa-solid fa-circle-info" style="margin-right: 8px;"></i> {{ message }}</span>
+                            <button class="alert-close" type="button">&times;</button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                {% endwith %}
+
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+        <!-- Unauthenticated View (Login / Register) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div style="position: fixed; top: 20px; right: 20px; z-index: 9999; max-width: 400px; width: 100%;">
+                {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                    <span>{{ message }}</span>
+                    <button class="alert-close" type="button">&times;</button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        {% endwith %}
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+
+    <!-- Custom JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

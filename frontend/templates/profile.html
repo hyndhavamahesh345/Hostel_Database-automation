@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Woxsen University{% endblock %}
+{% block page_title %}Student Resident Profile{% endblock %}
+{% block page_subtitle %}Woxsen University female resident records, academic info, and contact profile{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+    <!-- Profile Information Card -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fa-solid fa-id-badge" style="color: var(--primary);"></i> Student Details</h3>
+            <span class="badge badge-primary">{{ student.roll_number }}</span>
+        </div>
+        <div class="card-body">
+            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 24px;">
+                <div class="user-avatar" style="width: 64px; height: 64px; font-size: 26px;">
+                    {{ student.name[0]|upper }}
+                </div>
+                <div>
+                    <h3 style="font-size: 20px;">{{ student.name }}</h3>
+                    <p style="color: var(--text-muted); font-size: 14px;">{{ student.course }} • {{ student.year }}</p>
+                    <span class="badge badge-secondary" style="margin-top: 4px;">{{ student.gender }}</span>
+                </div>
+            </div>
+
+            <form action="{{ url_for('student_profile') }}" method="POST">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Email Address (Institutional)</label>
+                        <input type="email" class="form-control" value="{{ student.email }}" disabled style="background: #f8fafc; cursor: not-allowed;">
+                        <small style="color: var(--text-light); font-size: 11px;">Managed by campus administration</small>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="profile-phone">Contact Phone Number *</label>
+                        <input type="text" id="profile-phone" name="phone" class="form-control" value="{{ student.phone }}" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" for="profile-guardian">Guardian / Parent Name</label>
+                        <input type="text" id="profile-guardian" name="guardian_name" class="form-control" value="{{ student.guardian_name or '' }}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="profile-emergency">Emergency Contact Number</label>
+                        <input type="text" id="profile-emergency" name="emergency_contact" class="form-control" value="{{ student.emergency_contact or '' }}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label" for="profile-address">Permanent Home Address</label>
+                    <textarea id="profile-address" name="address" class="form-control">{{ student.address or '' }}</textarea>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); padding-top: 18px; margin-top: 18px;">
+                    <h4 style="font-size: 14px; margin-bottom: 12px; color: var(--text-main);">Change Security Password (Optional)</h4>
+                    <div class="form-group">
+                        <label class="form-label" for="profile-pass">New Password</label>
+                        <input type="password" id="profile-pass" name="new_password" class="form-control" placeholder="Leave blank to keep existing password">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Profile Changes
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Academic & Account Info -->
+    <div>
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-graduation-cap" style="color: var(--secondary);"></i> Academic Details</h3>
+            </div>
+            <div class="card-body">
+                <table class="custom-table" style="font-size: 14px;">
+                    <tbody>
+                        <tr>
+                            <td style="color: var(--text-muted); width: 40%;">Roll Number</td>
+                            <td><strong>{{ student.roll_number }}</strong></td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-muted);">Registered Program</td>
+                            <td>{{ student.course }}</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-muted);">Current Academic Year</td>
+                            <td>{{ student.year }}</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-muted);">Gender</td>
+                            <td>{{ student.gender }}</td>
+                        </tr>
+                        <tr>
+                            <td style="color: var(--text-muted);">Enrollment Date</td>
+                            <td>{{ student.created_at|date_format }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h3><i class="fa-solid fa-shield-halved" style="color: var(--success);"></i> Hostel Guidelines & Conduct</h3>
+            </div>
+            <div class="card-body">
+                <ul style="font-size: 13px; color: var(--text-muted); padding-left: 20px; display: flex; flex-direction: column; gap: 8px;">
+                    <li>Hostel main entry gates close strictly at 9:30 PM every night.</li>
+                    <li>Overnight stay outside hostel premises requires an approved leave request.</li>
+                    <li>Ragging, vandalism, and electrical heater appliances are strictly prohibited.</li>
+                    <li>Always keep your institutional ID card accessible when entering hostel blocks.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
