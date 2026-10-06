@@ -1120,4 +1120,4 @@ def admin_db_settings():
                            test_result=test_result)
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5005)
